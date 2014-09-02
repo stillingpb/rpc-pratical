@@ -74,6 +74,7 @@ class Connection {
 		if (dataBuff == null) {
 			lenBuff.flip();
 			dataBuff = ByteBuffer.allocate(lenBuff.getInt());
+			lenBuff.position(4); // 重新设置回lenBuff装满数据的状态
 		}
 		if (dataBuff.remaining() > 0)
 			channel.read(dataBuff);
