@@ -5,7 +5,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class Server {
+public class ServerStub {
 	private ServerContext context;
 
 	/**
@@ -29,7 +29,7 @@ public class Server {
 	private Reader[] readers;
 	private Handler[] handlers = null;
 
-	public Server(Object instance, String host, int port) {
+	public ServerStub(Object instance, String host, int port) {
 		context = new ServerContext();
 		context.setInstance(instance);
 		context.setHost(host);

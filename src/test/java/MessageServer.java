@@ -1,6 +1,6 @@
 import rpc.io.LongWritable;
 import rpc.ipc.RPC;
-import rpc.ipc.server.Server;
+import rpc.ipc.server.ServerStub;
 
 public class MessageServer implements MessageServerProtocol {
 
@@ -12,7 +12,7 @@ public class MessageServer implements MessageServerProtocol {
 	}
 
 	public static void main(String[] args) {
-		Server s = RPC.getServer(new MessageServer(), "127.0.0.1", 2345);
+		ServerStub s = RPC.getServer(new MessageServer(), "127.0.0.1", 2345);
 		s.start();
 	}
 }

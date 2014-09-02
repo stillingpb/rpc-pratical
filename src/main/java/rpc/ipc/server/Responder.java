@@ -43,7 +43,7 @@ class Responder extends Thread {
 	}
 
 	public void run() {
-		while (Server.running) {
+		while (ServerStub.running) {
 			try {
 				writeSelector.select();
 			} catch (IOException e) {

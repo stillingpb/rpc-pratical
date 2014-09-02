@@ -21,7 +21,7 @@ class Handler extends Thread {
 	}
 
 	public void run() {
-		while (Server.running) {
+		while (ServerStub.running) {
 			Call call = null;
 			try {
 				call = callQueue.take(); // 如果callQueue中没有数据，将会阻塞

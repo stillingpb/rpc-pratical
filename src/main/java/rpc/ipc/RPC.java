@@ -5,8 +5,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 import rpc.io.Writable;
-import rpc.ipc.client.Client;
-import rpc.ipc.server.Server;
+import rpc.ipc.client.ClientStub;
+import rpc.ipc.server.ServerStub;
 
 public class RPC {
 
@@ -19,8 +19,8 @@ public class RPC {
 	 * @param port
 	 * @return
 	 */
-	public static Server getServer(Object instance, String host, int port) {
-		return new Server(instance, host, port);
+	public static ServerStub getServer(Object instance, String host, int port) {
+		return new ServerStub(instance, host, port);
 	}
 
 	/**
@@ -57,13 +57,13 @@ public class RPC {
 					throw new IllegalArgumentException("方法参数必须是Writable对象");
 			}
 			// 调用远程方法
-			Writable result = Client.call(method.getName(), args2, host, port);
+			Writable result = ClientStub.call(method.getName(), args2, host, port);
 			return result;
 		}
 	}
 
 	public static void closeClientProxy() {
-		Client.close();
+		ClientStub.close();
 	}
 
 }

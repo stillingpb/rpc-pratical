@@ -40,7 +40,7 @@ class Reader extends Thread {
 	}
 
 	public void run() {
-		while (Server.running) {
+		while (ServerStub.running) {
 			try {
 				readSelector.select();
 			} catch (IOException e1) {

@@ -7,7 +7,7 @@ import java.util.concurrent.Future;
 import rpc.io.Writable;
 import rpc.ipc.util.RPCClientException;
 
-public class Client {
+public class ClientStub {
 	private static ExecutorService connectionPool = Executors.newFixedThreadPool(1);
 
 	public static Writable call(String methodName, Writable[] parameter, String host, int port)
