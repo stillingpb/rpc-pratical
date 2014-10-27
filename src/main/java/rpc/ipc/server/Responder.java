@@ -79,7 +79,9 @@ class Responder extends Thread {
 	public void doResponse(SelectionKey key) {
 		Connection conn = (Connection) key.attachment();
 		try {
-			conn.writeResult();
+			boolean isWriteOver = conn.writeResult();
+			if(isWriteOver)
+				conn.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

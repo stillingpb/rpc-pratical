@@ -60,6 +60,7 @@ class Handler extends Thread {
 			responder.startAdd();
 			conn.setResult(result);
 			SelectionKey key = responder.registerChannel(conn.channel);
+			conn.setWriteSelectionKey(key);
 			key.attach(conn);
 		} catch (ClosedChannelException e) {
 			e.printStackTrace();

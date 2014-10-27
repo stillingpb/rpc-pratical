@@ -13,7 +13,7 @@ import java.nio.channels.SocketChannel;
 import rpc.io.Writable;
 
 /**
- * 负责维护一次调用，读写需要的参数
+ * 负责维护一次远程调用的连接，并控制请求数据的读，结果数据的写
  * 
  * @author pb
  * 
@@ -94,12 +94,29 @@ class Connection {
 	/**
 	 * 将result写出到channel
 	 * 
+	 * @return 是否写完结果，如果写完,返回true，如果未写完,返回false
 	 * @throws IOException
 	 */
-	public void writeResult() throws IOException {
+	public boolean writeResult() throws IOException {
 		if (writeBuffer.remaining() > 0)
 			channel.write(writeBuffer);
-		if (writeBuffer.remaining() <= 0) // 如果写完了数据，将channel关闭
-			channel.close();
+		if (writeBuffer.remaining() <= 0)
+			return true;
+		else
+			return false;
+	}
+
+	/**
+	 * 关闭连接，并将注册的read,write事件从readselectKey，writeselectKey的selector中移除
+	 * @throws IOException
+	 */
+	public void close() throws IOException {
+		channel.close();
+		readKey.cancel();
+		writeKey.cancel();
+	}
+
+	public void setWriteSelectionKey(SelectionKey key) {
+		this.writeKey = key;
 	}
 }
