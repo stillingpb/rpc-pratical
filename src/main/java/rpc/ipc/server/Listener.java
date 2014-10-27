@@ -58,7 +58,6 @@ class Listener extends Thread {
 	private void doAccept(SelectionKey key) throws IOException {
 		ServerSocketChannel socketChannel = (ServerSocketChannel) key.channel();
 		SocketChannel channel = null;
-		int i = 0;
 		while ((channel = socketChannel.accept()) != null) {
 			channel.configureBlocking(false);
 			channel.socket().setTcpNoDelay(true);

@@ -18,7 +18,7 @@ public class testRPC {
 
 	@Test
 	public void testGetMessage() {
-		Message msg = rpcServer.getMessage(new LongWritable(1));
+		Message msg = rpcServer.getMessage(new LongWritable(10));
 		System.out.println(msg);
 	}
 }
