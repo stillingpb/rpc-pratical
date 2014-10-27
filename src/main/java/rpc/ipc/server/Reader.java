@@ -8,6 +8,8 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 
+import rpc.ipc.util.RPCServerException;
+
 class Reader extends Thread {
 	private ServerContext context;
 
@@ -15,13 +17,13 @@ class Reader extends Thread {
 	private volatile boolean adding;
 	private BlockingQueue<Call> callQueue;
 
-	public Reader(ServerContext context) {
+	public Reader(ServerContext context) throws RPCServerException {
 		this.context = context;
 		this.callQueue = context.getCallQueue();
 		try {
 			readSelector = Selector.open();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RPCServerException("reader 创建异常", e);
 		}
 	}
 
@@ -38,46 +40,57 @@ class Reader extends Thread {
 	}
 
 	public synchronized SelectionKey registerChannel(SocketChannel channel)
-			throws ClosedChannelException {
-		return channel.register(readSelector, SelectionKey.OP_READ);
+			throws RPCServerException {
+		try {
+			return channel.register(readSelector, SelectionKey.OP_READ);
+		} catch (ClosedChannelException e) {
+			throw new RPCServerException("read事件注册异常", e);
+		}
 	}
 
 	public void run() {
-		while (context.running) {
-			try {
+		try {
+			while (context.running) {
 				readSelector.select();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			while (adding) {
-				synchronized (this) {
-					try {
+				while (adding) {
+					synchronized (this) {
 						this.wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
 					}
 				}
+				Iterator<SelectionKey> iter = readSelector.selectedKeys().iterator();
+				while (iter.hasNext()) {
+					SelectionKey key = iter.next();
+					iter.remove();
+					if (key.isValid() && key.isReadable())
+						doRead(key);
+				}
 			}
-			Iterator<SelectionKey> iter = readSelector.selectedKeys().iterator();
-			while (iter.hasNext()) {
-				SelectionKey key = iter.next();
-				iter.remove();
-				if (key.isValid() && key.isReadable())
-					doRead(key);
+		} catch (Exception e) {
+			RPCServerException serverException = new RPCServerException("reader 抛出异常", e);
+			serverException.printStackTrace();
+		} finally {
+			// 关闭 reader
+			try {
+				readSelector.close();
+			} catch (IOException e) {
+				RPCServerException serverException = new RPCServerException("reader 抛出异常", e);
+				serverException.printStackTrace();
 			}
 		}
 	}
 
 	private void doRead(SelectionKey key) {
-		Connection c = (Connection) key.attachment();
+		Connection conn = (Connection) key.attachment();
 		try {
-			Call call = c.readCall();
+			Call call = conn.readCall();
 			if (call != null) {
-				call.setAttach(c); // 将connection对象附属到call对象中，供后续返回时使用
+				call.setAttach(conn); // 将connection对象附属到call对象中，供后续返回时使用
 				callQueue.add(call);
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			RPCServerException serverException = new RPCServerException("reader 读取client调用请求失败", e);
+			serverException.printStackTrace();
+			conn.close();
 		}
 	}
 }

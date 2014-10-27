@@ -7,6 +7,7 @@ import java.lang.reflect.Proxy;
 import rpc.io.Writable;
 import rpc.ipc.client.ClientStub;
 import rpc.ipc.server.ServerStub;
+import rpc.ipc.util.RPCServerException;
 
 public class RPC {
 
@@ -18,8 +19,10 @@ public class RPC {
 	 * @param host
 	 * @param port
 	 * @return
+	 * @throws RPCServerException 创建rpcServer失败
 	 */
-	public static ServerStub getServer(Object instance, String host, int port) {
+	public static ServerStub getServer(Object instance, String host, int port)
+			throws RPCServerException {
 		return new ServerStub(instance, host, port);
 	}
 

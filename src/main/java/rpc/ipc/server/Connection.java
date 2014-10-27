@@ -108,12 +108,17 @@ class Connection {
 
 	/**
 	 * 关闭连接，并将注册的read,write事件从readselectKey，writeselectKey的selector中移除
-	 * @throws IOException
+	 * 
 	 */
-	public void close() throws IOException {
-		channel.close();
-		readKey.cancel();
-		writeKey.cancel();
+	public void close() {
+		if (readKey != null)
+			readKey.cancel();
+		if (writeKey != null)
+			writeKey.cancel();
+		try {
+			channel.close();
+		} catch (IOException e) {
+		}
 	}
 
 	public void setWriteSelectionKey(SelectionKey key) {

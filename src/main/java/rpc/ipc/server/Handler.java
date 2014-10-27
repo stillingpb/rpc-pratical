@@ -1,5 +1,6 @@
 package rpc.ipc.server;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
@@ -7,6 +8,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import rpc.io.Writable;
+import rpc.ipc.util.RPCServerException;
 
 class Handler extends Thread {
 
@@ -24,29 +26,43 @@ class Handler extends Thread {
 
 	public void run() {
 		while (context.running) {
-			Call call = null;
 			try {
-				call = callQueue.take(); // 如果callQueue中没有数据，将会阻塞
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			}
-			String methodName = call.getMethodName();
-			Writable[] parameters = call.getParameters();
-			Class<? extends Writable> paramClass[] = new Class[parameters.length];
-			for (int i = 0; i < parameters.length; i++) {
-				Class<? extends Writable> clazz = parameters[i].getClass();
-				paramClass[i] = clazz;
-			}
-			Writable result = null;
-			try {
-				Method method = instance.getClass().getDeclaredMethod(methodName, paramClass);
-				method.setAccessible(true);
-				result = (Writable) method.invoke(instance, parameters);
+				Call call = callQueue.take(); // 如果callQueue中没有数据，将会阻塞
+				Writable result = invokeMethod(call);
+				processResult(call.getAttach(), result);
 			} catch (Exception e) {
-				e.printStackTrace();
+				RPCServerException serverException = new RPCServerException("handler 抛出异常", e);
+				serverException.printStackTrace();
 			}
-			processResult(call.getAttach(), result);
 		}
+	}
+
+	/**
+	 * 执行方法调用
+	 * 
+	 * @param call
+	 * @return result 调用结果
+	 * @throws RPCServerException
+	 */
+	private Writable invokeMethod(Call call) throws RPCServerException {
+		String methodName = call.getMethodName();
+		Writable[] parameters = call.getParameters();
+		Class<? extends Writable> paramClass[] = new Class[parameters.length];
+		for (int i = 0; i < parameters.length; i++) {
+			Class<? extends Writable> clazz = parameters[i].getClass();
+			paramClass[i] = clazz;
+		}
+		Writable result = null;
+		try {
+			Method method = instance.getClass().getDeclaredMethod(methodName, paramClass);
+			method.setAccessible(true);
+			result = (Writable) method.invoke(instance, parameters);
+		} catch (Exception e) {
+			Connection conn = call.getAttach();
+			conn.close();
+			throw new RPCServerException(methodName + " 调用异常", e);
+		}
+		return result;
 	}
 
 	/**
@@ -54,16 +70,21 @@ class Handler extends Thread {
 	 * 
 	 * @param conn
 	 * @param result
+	 * @throws RPCServerException
 	 */
-	private void processResult(Connection conn, Writable result) {
+	private void processResult(Connection conn, Writable result) throws RPCServerException {
+		SelectionKey key = null;
 		try {
 			responder.startAdd();
 			conn.setResult(result);
-			SelectionKey key = responder.registerChannel(conn.channel);
+			key = responder.registerChannel(conn.channel);
 			conn.setWriteSelectionKey(key);
 			key.attach(conn);
-		} catch (ClosedChannelException e) {
-			e.printStackTrace();
+		} catch (RPCServerException e) { // 关闭channel，注册之前注册的read事件
+			if (key != null)
+				key.cancel();
+			conn.close();
+			throw e;
 		} finally {
 			responder.finishAdd();
 		}

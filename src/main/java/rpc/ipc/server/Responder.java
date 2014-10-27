@@ -7,6 +7,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
+import rpc.ipc.util.RPCServerException;
+
 /**
  * 负责将调用完成的数据输出出去
  * 
@@ -19,12 +21,12 @@ class Responder extends Thread {
 	private Selector writeSelector;
 	private boolean adding = false;
 
-	public Responder(ServerContext context) {
+	public Responder(ServerContext context) throws RPCServerException {
 		this.context = context;
 		try {
 			this.writeSelector = Selector.open();
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RPCServerException("responder 创建异常", e);
 		}
 	}
 
@@ -41,32 +43,41 @@ class Responder extends Thread {
 	}
 
 	public synchronized SelectionKey registerChannel(SocketChannel channel)
-			throws ClosedChannelException {
-		return channel.register(writeSelector, SelectionKey.OP_WRITE);
+			throws RPCServerException {
+		try {
+			return channel.register(writeSelector, SelectionKey.OP_WRITE);
+		} catch (ClosedChannelException e) {
+			throw new RPCServerException("注册responder异常", e);
+		}
 	}
 
 	public void run() {
-		while (context.running) {
-			try {
+		try {
+			while (context.running) {
 				writeSelector.select();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			while (adding) {
-				synchronized (this) {
-					try {
+				while (adding) {
+					synchronized (this) {
 						this.wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
 					}
 				}
+				Iterator<SelectionKey> iter = writeSelector.selectedKeys().iterator();
+				while (iter.hasNext()) {
+					SelectionKey key = iter.next();
+					iter.remove();
+					if (key.isValid() && key.isWritable())
+						doResponse(key);
+				}
 			}
-			Iterator<SelectionKey> iter = writeSelector.selectedKeys().iterator();
-			while (iter.hasNext()) {
-				SelectionKey key = iter.next();
-				iter.remove();
-				if (key.isValid() && key.isWritable())
-					doResponse(key);
+		} catch (Exception e) {
+			RPCServerException serverException = new RPCServerException("responder 抛出异常", e);
+			serverException.printStackTrace();
+		} finally {
+			// 关闭 responder
+			try {
+				writeSelector.close();
+			} catch (IOException e) {
+				RPCServerException serverException = new RPCServerException("responder 抛出异常", e);
+				serverException.printStackTrace();
 			}
 		}
 	}
@@ -78,12 +89,15 @@ class Responder extends Thread {
 	 */
 	public void doResponse(SelectionKey key) {
 		Connection conn = (Connection) key.attachment();
+		boolean isWriteOver;
 		try {
-			boolean isWriteOver = conn.writeResult();
-			if(isWriteOver)
+			isWriteOver = conn.writeResult();
+			if (isWriteOver)
 				conn.close();
 		} catch (IOException e) {
-			e.printStackTrace();
+			RPCServerException serverException = new RPCServerException("writer 写出执行结果失败", e);
+			serverException.printStackTrace();
+			conn.close();
 		}
 	}
 }

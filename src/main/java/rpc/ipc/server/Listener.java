@@ -9,12 +9,14 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
+import rpc.ipc.util.RPCServerException;
+
 class Listener extends Thread {
 	private ServerContext context;
 	private ServerSocketChannel acceptChannel;
 	private Selector selector;
 
-	public Listener(ServerContext context) {
+	public Listener(ServerContext context) throws RPCServerException {
 		this.context = context;
 		String host = context.getHost();
 		int port = context.getPort();
@@ -27,13 +29,13 @@ class Listener extends Thread {
 			selector = Selector.open();
 			acceptChannel.register(selector, SelectionKey.OP_ACCEPT);
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RPCServerException("listener 创建异常", e);
 		}
 	}
 
 	public void run() {
-		while (context.running) {
-			try {
+		try {
+			while (context.running) {
 				selector.select();
 				Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
 				while (iter.hasNext()) {
@@ -42,10 +44,18 @@ class Listener extends Thread {
 					if (key.isValid() && key.isAcceptable())
 						doAccept(key);
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
-
+		} catch (IOException e) {
+			RPCServerException serverException = new RPCServerException("listener 抛出异常", e);
+			serverException.printStackTrace();
+		} finally {
+			// 关闭 listener
+			try {
+				selector.close();
+			} catch (IOException e) {
+				RPCServerException serverException = new RPCServerException("listener 抛出异常", e);
+				serverException.printStackTrace();
+			}
 		}
 	}
 
@@ -56,18 +66,31 @@ class Listener extends Thread {
 	 * @throws IOException
 	 */
 	private void doAccept(SelectionKey key) throws IOException {
+		/*
+		 * 当某个channel抛出异常，将这个channel去除掉，程序继续运行。。当socketChannel发生异常，程序退出， 抛出异常
+		 * IOException
+		 */
 		ServerSocketChannel socketChannel = (ServerSocketChannel) key.channel();
 		SocketChannel channel = null;
+		SelectionKey readKey = null;
 		while ((channel = socketChannel.accept()) != null) {
-			channel.configureBlocking(false);
-			channel.socket().setTcpNoDelay(true);
-
 			Reader reader = context.getReader();
 			try {
+				channel.configureBlocking(false);
+				channel.socket().setTcpNoDelay(true);
 				reader.startAdd();
-				SelectionKey readKey = reader.registerChannel(channel);
+				readKey = reader.registerChannel(channel);
 				Connection conn = new Connection(readKey, channel);
 				readKey.attach(conn);
+			} catch (Exception e) {// 释放channel和注册事件
+				e.printStackTrace();
+				if (readKey != null)
+					readKey.cancel();
+				try {
+					if (channel != null)
+						channel.close();
+				} catch (IOException e1) {
+				}
 			} finally {
 				reader.finishAdd();
 			}

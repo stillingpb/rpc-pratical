@@ -5,6 +5,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import rpc.ipc.util.RPCServerException;
+
 public class ServerStub {
 	private ServerContext context;
 
@@ -22,13 +24,13 @@ public class ServerStub {
 	private Reader[] readers;
 	private Handler[] handlers = null;
 
-	public ServerStub(Object instance, String host, int port) {
+	public ServerStub(Object instance, String host, int port) throws RPCServerException {
 		this(instance, host, port, ServerContext.DEFAULT_READER_NUM,
 				ServerContext.DEFAULT_HANDLER_NUM, ServerContext.DEFAULT_RESPONDER_NUM);
 	}
 
 	public ServerStub(Object instance, String host, int port, int readerNum, int handlerNum,
-			int responseNum) {
+			int responseNum) throws RPCServerException {
 		context = new ServerContext();
 		context.setInstance(instance);
 		context.setHost(host);
