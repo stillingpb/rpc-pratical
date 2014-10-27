@@ -32,7 +32,7 @@ class Listener extends Thread {
 	}
 
 	public void run() {
-		while (ServerStub.running) {
+		while (context.running) {
 			try {
 				selector.select();
 				Iterator<SelectionKey> iter = selector.selectedKeys().iterator();

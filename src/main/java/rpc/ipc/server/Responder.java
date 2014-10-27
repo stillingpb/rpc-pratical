@@ -14,10 +14,13 @@ import java.util.Iterator;
  * 
  */
 class Responder extends Thread {
+	private ServerContext context;
+
 	private Selector writeSelector;
 	private boolean adding = false;
 
-	public Responder() {
+	public Responder(ServerContext context) {
+		this.context = context;
 		try {
 			this.writeSelector = Selector.open();
 		} catch (IOException e) {
@@ -43,7 +46,7 @@ class Responder extends Thread {
 	}
 
 	public void run() {
-		while (ServerStub.running) {
+		while (context.running) {
 			try {
 				writeSelector.select();
 			} catch (IOException e) {

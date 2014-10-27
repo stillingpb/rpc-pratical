@@ -9,27 +9,26 @@ public class ServerStub {
 	private ServerContext context;
 
 	/**
-	 * 控制服务器启停的变量
-	 */
-	static volatile boolean running = true;
-
-	/**
 	 * 调用队列
 	 */
 	private BlockingQueue<Call> callQueue;
 
-	private static int DEFAULT_READER_NUM = 5;
-	private static int DEFAULT_HANDLER_NUM = 5;
-
 	private ExecutorService readPool;
 	private ExecutorService handlerPool;
+	private ExecutorService responsePool;
 
 	private Listener listener = null;
-	private Responder responder = null;
+	private Responder[] responders = null;
 	private Reader[] readers;
 	private Handler[] handlers = null;
 
 	public ServerStub(Object instance, String host, int port) {
+		this(instance, host, port, ServerContext.DEFAULT_READER_NUM,
+				ServerContext.DEFAULT_HANDLER_NUM, ServerContext.DEFAULT_RESPONDER_NUM);
+	}
+
+	public ServerStub(Object instance, String host, int port, int readerNum, int handlerNum,
+			int responseNum) {
 		context = new ServerContext();
 		context.setInstance(instance);
 		context.setHost(host);
@@ -38,37 +37,41 @@ public class ServerStub {
 		callQueue = new LinkedBlockingQueue<Call>();
 		context.setCallQueue(callQueue);
 
-		responder = new Responder();
-		context.setResponder(responder);
+		responders = new Responder[responseNum];
+		for (int i = 0; i < responseNum; i++)
+			responders[i] = new Responder(context);
+		context.setResponders(responders);
 
-		readers = new Reader[DEFAULT_READER_NUM];
-		for (int i = 0; i < DEFAULT_READER_NUM; i++) {
+		readers = new Reader[readerNum];
+		for (int i = 0; i < readerNum; i++) {
 			readers[i] = new Reader(context);
 		}
 		context.setReaders(readers);
 
 		listener = new Listener(context);
 
-		handlers = new Handler[DEFAULT_HANDLER_NUM];
-		for (int i = 0; i < DEFAULT_HANDLER_NUM; i++)
+		handlers = new Handler[handlerNum];
+		for (int i = 0; i < handlerNum; i++)
 			handlers[i] = new Handler(context);
 	}
 
 	public void start() {
-		responder.start();
+		handlerPool = Executors.newFixedThreadPool(handlers.length);
+		for (Handler handler : handlers)
+			handlerPool.execute(handler);
 
-		readPool = Executors.newFixedThreadPool(DEFAULT_READER_NUM);
+		responsePool = Executors.newFixedThreadPool(responders.length);
+		for (Responder responder : responders)
+			responsePool.execute(responder);
+
+		readPool = Executors.newFixedThreadPool(readers.length);
 		for (Reader reader : readers)
 			readPool.execute(reader);
 
 		listener.start();
-
-		handlerPool = Executors.newFixedThreadPool(DEFAULT_HANDLER_NUM);
-		for (Handler handler : handlers)
-			handlerPool.execute(handler);
 	}
 
 	public void close() {
-		running = false;
+		context.running = false;
 	}
 }

@@ -9,11 +9,14 @@ import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 
 class Reader extends Thread {
+	private ServerContext context;
+
 	Selector readSelector;
 	private volatile boolean adding;
 	private BlockingQueue<Call> callQueue;
 
 	public Reader(ServerContext context) {
+		this.context = context;
 		this.callQueue = context.getCallQueue();
 		try {
 			readSelector = Selector.open();
@@ -40,7 +43,7 @@ class Reader extends Thread {
 	}
 
 	public void run() {
-		while (ServerStub.running) {
+		while (context.running) {
 			try {
 				readSelector.select();
 			} catch (IOException e1) {

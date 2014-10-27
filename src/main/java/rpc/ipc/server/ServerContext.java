@@ -3,18 +3,40 @@ package rpc.ipc.server;
 import java.util.concurrent.BlockingQueue;
 
 public class ServerContext {
+	/**
+	 * 控制服务器启停的变量
+	 */
+	volatile boolean running = true;
+
+	static int DEFAULT_READER_NUM = 2;
+	static int DEFAULT_HANDLER_NUM = 10;
+	static int DEFAULT_RESPONDER_NUM = 2;
 
 	private String host;
 	private int port;
 	private Object instance;
-	private Responder responder;
 	private BlockingQueue<Call> callQueue;
 	private Reader[] readers;
+	private Responder[] responders;
 	private int currentReader = 0;
+	private int currentResponder = 0;
 
 	Reader getReader() {
 		currentReader = (currentReader + 1) % readers.length;
 		return readers[currentReader];
+	}
+
+	Responder getResponder() {
+		currentResponder = (currentResponder + 1) % responders.length;
+		return responders[currentResponder];
+	}
+
+	public Responder[] getResponders() {
+		return responders;
+	}
+
+	public void setResponders(Responder[] responders) {
+		this.responders = responders;
 	}
 
 	public String getHost() {
@@ -41,20 +63,12 @@ public class ServerContext {
 		this.instance = instance;
 	}
 
-	public void setResponder(Responder responder) {
-		this.responder = responder;
-	}
-
 	public void setCallQueue(BlockingQueue<Call> callQueue) {
 		this.callQueue = callQueue;
 	}
 
 	public BlockingQueue<Call> getCallQueue() {
 		return this.callQueue;
-	}
-
-	public Responder getResponder() {
-		return this.responder;
 	}
 
 	public void setReaders(Reader[] readers) {

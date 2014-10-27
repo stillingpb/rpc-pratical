@@ -20,13 +20,15 @@ import rpc.io.Writable;
  */
 class Connection {
 	SocketChannel channel;
+	/*********************************/
+	// 接收调用请求相关参数
 	private SelectionKey readKey;
-
 	private ByteBuffer lenBuff;
 	private ByteBuffer dataBuff;
 
 	/*********************************/
 
+	// 发送调用结果相关参数
 	private SelectionKey writeKey;
 	private ByteBuffer writeBuffer;
 

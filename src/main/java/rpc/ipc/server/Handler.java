@@ -10,18 +10,20 @@ import rpc.io.Writable;
 
 class Handler extends Thread {
 
+	private ServerContext context;
 	private BlockingQueue<Call> callQueue;
 	private Object instance;
 	private Responder responder;
 
 	public Handler(ServerContext context) {
+		this.context = context;
 		this.instance = context.getInstance();
 		this.callQueue = context.getCallQueue();
 		this.responder = context.getResponder();
 	}
 
 	public void run() {
-		while (ServerStub.running) {
+		while (context.running) {
 			Call call = null;
 			try {
 				call = callQueue.take(); // 如果callQueue中没有数据，将会阻塞
