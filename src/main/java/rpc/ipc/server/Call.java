@@ -35,8 +35,7 @@ class Call implements Writable {
 			Writable param = null;
 			try {
 				clazz = (Class<? extends Writable>) Class.forName(paramClassName);
-				Constructor<? extends Writable> constructor = clazz.getDeclaredConstructor();
-				param = constructor.newInstance();
+				param = clazz.newInstance();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

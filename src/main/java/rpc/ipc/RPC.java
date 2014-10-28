@@ -1,11 +1,8 @@
 package rpc.ipc;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
-import rpc.io.Writable;
-import rpc.ipc.client.ClientStub;
+import rpc.ipc.client.ClientInvocation;
 import rpc.ipc.server.ServerStub;
 import rpc.ipc.util.RPCServerException;
 
@@ -39,30 +36,4 @@ public class RPC {
 		ClientInvocation handler = new ClientInvocation(host, port);
 		return (T) Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] { clazz }, handler);
 	}
-
-	private static class ClientInvocation implements InvocationHandler {
-		private String host;
-		private int port;
-
-		public ClientInvocation(String host, int port) {
-			this.host = host;
-			this.port = port;
-		}
-
-		@Override
-		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			// 将object数组转换成writable数组
-			Writable[] args2 = new Writable[args.length];
-			for (int i = 0; i < args.length; i++) {
-				if (args[i] instanceof Writable)
-					args2[i] = (Writable) args[i];
-				else
-					throw new IllegalArgumentException("方法参数必须是Writable对象");
-			}
-			// 调用远程方法
-			Writable result = ClientStub.call(method.getName(), args2, host, port);
-			return result;
-		}
-	}
-
 }

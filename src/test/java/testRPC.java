@@ -1,19 +1,20 @@
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 
+import rpc.io.ExceptionWritable;
 import rpc.io.IntWritable;
 import rpc.io.LongWritable;
+import rpc.io.Writable;
 import rpc.ipc.RPC;
 
 public class testRPC {
 	public static void main(String[] args) throws MalformedURLException, URISyntaxException {
 		testRPC t = new testRPC();
 		t.init();
-		t.testReturnNull();
-		t.testReturnVoid();
-		t.testGetMessage();
-		t.testGetMessage();
-		t.testGetMessage();
+		// t.testReturnNull();
+		// t.testReturnVoid();
+		// t.testGetMessage();
+		t.testReturnException();
 	}
 
 	MessageServerProtocol rpcServer;
@@ -42,4 +43,15 @@ public class testRPC {
 		System.out.println(msg);
 	}
 
+	// @Test
+	public void testReturnException() {
+		System.out.println("client test exception");
+		try {
+			rpcServer.returnException(new IntWritable(2));
+		} catch (ExceptionWritable e) {
+			System.out.println(e.getMsg());
+			for (Writable w : e.getParams())
+				System.out.print(((IntWritable) w).getValue() + " ");
+		}
+	}
 }

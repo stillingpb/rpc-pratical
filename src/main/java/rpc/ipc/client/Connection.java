@@ -71,6 +71,8 @@ class Connection implements Callable<Writable> {
 			Class<? extends Writable> clazz = (Class<? extends Writable>) Class.forName(className);
 			instance = clazz.getDeclaredConstructor().newInstance();
 			instance.readFields(in);
+		} catch (NoSuchMethodException e) { //
+			e.printStackTrace();
 		} catch (Exception e) {
 			e.printStackTrace();
 		} finally {

@@ -1,9 +1,11 @@
 package rpc.ipc.server;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.BlockingQueue;
 
+import rpc.io.ExceptionWritable;
 import rpc.io.NullWritable;
 import rpc.io.Writable;
 import rpc.ipc.util.RPCServerException;
@@ -55,8 +57,16 @@ class Handler extends Thread {
 			Method method = instance.getClass().getDeclaredMethod(methodName, paramClass);
 			method.setAccessible(true);
 			result = (Writable) method.invoke(instance, parameters);
-			if (result == null) //如果调用结果是null
+			if (result == null) // 如果调用结果是null
 				result = new NullWritable();
+		} catch (InvocationTargetException e) { // 执行方法抛出异常，也就是方法返回的异常
+			Throwable targetException = e.getTargetException();
+			if (!(targetException instanceof ExceptionWritable)) {
+				throw new RPCServerException(targetException.getClass().getName() + " 不是 "
+						+ ExceptionWritable.class + " 的子类", e);
+			}
+			ExceptionWritable exception = (ExceptionWritable) targetException;
+			result = exception;
 		} catch (Exception e) {
 			Connection conn = call.getAttach();
 			conn.close();
