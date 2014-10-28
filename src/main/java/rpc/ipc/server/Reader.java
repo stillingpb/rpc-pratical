@@ -7,15 +7,19 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import rpc.ipc.util.RPCServerException;
 
 class Reader extends Thread {
 	private ServerContext context;
-
 	Selector readSelector;
-	private volatile boolean adding;
 	private BlockingQueue<Call> callQueue;
+
+	private volatile boolean adding;
+	private ReentrantLock addingLock = new ReentrantLock();
+	private Condition addingCondition = addingLock.newCondition();
 
 	public Reader(ServerContext context) throws RPCServerException {
 		this.context = context;
@@ -33,30 +37,36 @@ class Reader extends Thread {
 	}
 
 	public void finishAdd() {
-		adding = false;
-		synchronized (this) {
-			this.notify();
+		try {
+			addingLock.lock();
+			adding = false;
+			addingCondition.signalAll();
+		} finally {
+			addingLock.unlock();
 		}
 	}
 
-	public synchronized SelectionKey registerChannel(SocketChannel channel)
-			throws RPCServerException {
+	public SelectionKey registerChannel(SocketChannel channel) throws RPCServerException {
 		try {
+			addingLock.lock();
 			return channel.register(readSelector, SelectionKey.OP_READ);
 		} catch (ClosedChannelException e) {
 			throw new RPCServerException("read事件注册异常", e);
+		} finally {
+			addingLock.unlock();
 		}
 	}
 
-	public void run() {
+	public synchronized void run() {
 		try {
+			addingLock.lock();
 			while (context.running) {
-				readSelector.select();
 				while (adding) {
-					synchronized (this) {
-						this.wait();
-					}
+					addingCondition.await();
 				}
+				int num = readSelector.select();
+				if (num <= 0)
+					continue;
 				Iterator<SelectionKey> iter = readSelector.selectedKeys().iterator();
 				while (iter.hasNext()) {
 					SelectionKey key = iter.next();
@@ -76,6 +86,7 @@ class Reader extends Thread {
 				RPCServerException serverException = new RPCServerException("reader 抛出异常", e);
 				serverException.printStackTrace();
 			}
+			addingLock.unlock();
 		}
 	}
 

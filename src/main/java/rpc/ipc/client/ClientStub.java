@@ -1,30 +1,25 @@
 package rpc.ipc.client;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
+import rpc.io.NullWritable;
 import rpc.io.Writable;
 import rpc.ipc.util.RPCClientException;
 
 public class ClientStub {
-	private static ExecutorService connectionPool = Executors.newFixedThreadPool(1);
-
 	public static Writable call(String methodName, Writable[] parameter, String host, int port)
 			throws RPCClientException {
 		Call call = new Call(methodName, parameter);
-		Future<Writable> feture = connectionPool.submit(new Connection(call, host, port));
+		FutureTask<Writable> callTask = new FutureTask<Writable>(new Connection(call, host, port));
+		callTask.run();
 		try {
-			return feture.get();
+			Writable result = callTask.get();
+			if (result instanceof NullWritable) // 如果返回的是一个null,也就是NullWritable
+				result = null;
+			return result;
 		} catch (Exception e) {
 			throw new RPCClientException("rpc调用异常", e);
 		}
 	}
 
-	/**
-	 * 关闭正在进行远程方法调用的线程
-	 */
-	public static void close() {
-		connectionPool.shutdownNow();
-	}
 }

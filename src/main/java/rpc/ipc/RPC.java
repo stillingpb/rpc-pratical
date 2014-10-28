@@ -65,8 +65,4 @@ public class RPC {
 		}
 	}
 
-	public static void closeClientProxy() {
-		ClientStub.close();
-	}
-
 }

@@ -1,16 +1,10 @@
+import rpc.io.IntWritable;
 import rpc.io.LongWritable;
 import rpc.ipc.RPC;
 import rpc.ipc.server.ServerStub;
 import rpc.ipc.util.RPCServerException;
 
 public class MessageServer implements MessageServerProtocol {
-
-	@Override
-	public Message getMessage(LongWritable para) {
-		System.out.println(para.getValue() + " info");
-		Message msg = new Message(12, 23, "pb");
-		return msg;
-	}
 
 	public static void main(String[] args) {
 		try {
@@ -20,4 +14,23 @@ public class MessageServer implements MessageServerProtocol {
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public Message getMessage(LongWritable para) {
+		System.out.println("server return msg");
+		Message msg = new Message(12, 23, "pb");
+		return msg;
+	}
+
+	@Override
+	public void returnVoid(IntWritable para) {
+		System.out.println("server return void " + para.getValue());
+	}
+
+	@Override
+	public IntWritable returnNull(IntWritable intWritable) {
+		System.out.println("server return null " + intWritable.getValue());
+		return null;
+	}
+
 }

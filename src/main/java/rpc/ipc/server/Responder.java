@@ -6,6 +6,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Iterator;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import rpc.ipc.util.RPCServerException;
 
@@ -19,7 +21,10 @@ class Responder extends Thread {
 	private ServerContext context;
 
 	private Selector writeSelector;
-	private boolean adding = false;
+
+	private volatile boolean adding;
+	private ReentrantLock addingLock = new ReentrantLock();
+	private Condition addingCondition = addingLock.newCondition();
 
 	public Responder(ServerContext context) throws RPCServerException {
 		this.context = context;
@@ -36,36 +41,43 @@ class Responder extends Thread {
 	}
 
 	public void finishAdd() {
-		adding = false;
-		synchronized (this) {
-			this.notify();
+		try {
+			addingLock.lock();
+			adding = false;
+			addingCondition.signalAll();
+		} finally {
+			addingLock.unlock();
 		}
 	}
 
-	public synchronized SelectionKey registerChannel(SocketChannel channel)
-			throws RPCServerException {
+	public SelectionKey registerChannel(SocketChannel channel) throws RPCServerException {
 		try {
+			addingLock.lock();
 			return channel.register(writeSelector, SelectionKey.OP_WRITE);
 		} catch (ClosedChannelException e) {
 			throw new RPCServerException("注册responder异常", e);
+		} finally {
+			addingLock.unlock();
 		}
 	}
 
 	public void run() {
 		try {
+			addingLock.lock();
 			while (context.running) {
-				writeSelector.select();
 				while (adding) {
-					synchronized (this) {
-						this.wait();
-					}
+					addingCondition.await();
 				}
+				int num = writeSelector.select();
+				if (num <= 0)
+					continue;
 				Iterator<SelectionKey> iter = writeSelector.selectedKeys().iterator();
 				while (iter.hasNext()) {
 					SelectionKey key = iter.next();
 					iter.remove();
-					if (key.isValid() && key.isWritable())
+					if (key.isValid() && key.isWritable()) {
 						doResponse(key);
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -79,6 +91,7 @@ class Responder extends Thread {
 				RPCServerException serverException = new RPCServerException("responder 抛出异常", e);
 				serverException.printStackTrace();
 			}
+			addingLock.unlock();
 		}
 	}
 

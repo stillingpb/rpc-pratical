@@ -1,12 +1,10 @@
 package rpc.ipc.server;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
+import rpc.io.NullWritable;
 import rpc.io.Writable;
 import rpc.ipc.util.RPCServerException;
 
@@ -57,6 +55,8 @@ class Handler extends Thread {
 			Method method = instance.getClass().getDeclaredMethod(methodName, paramClass);
 			method.setAccessible(true);
 			result = (Writable) method.invoke(instance, parameters);
+			if (result == null) //如果调用结果是null
+				result = new NullWritable();
 		} catch (Exception e) {
 			Connection conn = call.getAttach();
 			conn.close();

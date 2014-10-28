@@ -52,6 +52,7 @@ class Connection implements Callable<Writable> {
 			out.writeInt(callLen);
 			byte[] callData = buf.toByteArray();
 			out.write(callData);
+			socket.getOutputStream().flush();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

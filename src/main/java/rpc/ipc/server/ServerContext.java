@@ -8,9 +8,9 @@ public class ServerContext {
 	 */
 	volatile boolean running = true;
 
-	static int DEFAULT_READER_NUM = 2;
-	static int DEFAULT_HANDLER_NUM = 10;
-	static int DEFAULT_RESPONDER_NUM = 2;
+	static int DEFAULT_READER_NUM = 1;
+	static int DEFAULT_HANDLER_NUM = 1;
+	static int DEFAULT_RESPONDER_NUM = 1;
 
 	private String host;
 	private int port;
