@@ -11,9 +11,9 @@ public class testRPC {
 	public static void main(String[] args) throws MalformedURLException, URISyntaxException {
 		testRPC t = new testRPC();
 		t.init();
-		// t.testReturnNull();
-		// t.testReturnVoid();
-		// t.testGetMessage();
+		t.testReturnNull();
+		t.testReturnVoid();
+		t.testGetMessage();
 		t.testReturnException();
 	}
 

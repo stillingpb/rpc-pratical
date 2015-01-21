@@ -1,5 +1,9 @@
 package rpc.ipc.server.headBuffer;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
+
 import rpc.ipc.util.HeadBufferException;
 
 /**
@@ -10,10 +14,38 @@ import rpc.ipc.util.HeadBufferException;
  */
 public abstract class HeadBuffer {
 	/**
-	 * refCount变量取值合法访问 [0, intMax]
-	 * refCount的值表示当前持有该对象的引用数量
+	 * refCount变量取值合法访问 [0, intMax] refCount的值表示当前持有该对象的引用数量
 	 */
 	private int refCount = 0;
+
+	protected ByteBuffer buffer;
+
+	private Integer length;
+
+	/**
+	 * 从channel 中读取4字节的长度
+	 * 
+	 * @param channel
+	 * @return 如果读完了长度信息，返回 true，否则返回false
+	 * @throws IOException
+	 */
+	public boolean readLength(SocketChannel channel) throws IOException {
+		if (length != null)
+			return true;
+		channel.read(buffer);
+		return buffer.position() == 4;
+	}
+
+	public Integer getLength() {
+		if (length != null)
+			return length;
+		if (buffer.position() == 4) {
+			buffer.flip();
+			length = buffer.asIntBuffer().get();
+			return length;
+		} else
+			return null;
+	}
 
 	public int getReferenceCount() {
 		return refCount;
@@ -45,6 +77,11 @@ public abstract class HeadBuffer {
 		refCount -= num;
 		if (refCount == 0)
 			deallocate();
+	}
+
+	public void reset() {
+		refCount = 0;
+		buffer.clear();
 	}
 
 	/**

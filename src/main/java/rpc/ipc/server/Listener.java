@@ -80,7 +80,9 @@ class Listener extends Thread {
 				channel.socket().setTcpNoDelay(true);
 				reader.startAdd();
 				readKey = reader.registerChannel(channel);
-				Connection conn = new Connection(readKey, channel);
+				// Connection conn = new Connection(readKey, channel);
+				Connection conn = new Connection(readKey, channel,
+						context.DEFAULT_HEAD_BUFFER_MANAGER);
 				readKey.attach(conn);
 			} catch (Exception e) {// 释放channel和注册事件
 				e.printStackTrace();

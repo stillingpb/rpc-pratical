@@ -11,6 +11,9 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 import rpc.io.Writable;
+import rpc.ipc.server.headBuffer.HeadBuffer;
+import rpc.ipc.server.headBuffer.manager.HeadBufferManager;
+import rpc.ipc.util.HeadBufferException;
 
 /**
  * 负责维护一次远程调用的连接，并控制请求数据的读，结果数据的写
@@ -20,10 +23,11 @@ import rpc.io.Writable;
  */
 class Connection {
 	SocketChannel channel;
+	HeadBufferManager headBufferManager;
 	/*********************************/
 	// 接收调用请求相关参数
 	private SelectionKey readKey;
-	private ByteBuffer lenBuff;
+	private HeadBuffer lenBuffer;
 	private ByteBuffer dataBuff;
 
 	/*********************************/
@@ -34,11 +38,11 @@ class Connection {
 
 	/*********************************/
 
-	public Connection(SelectionKey readKey, SocketChannel channel) {
+	public Connection(SelectionKey readKey, SocketChannel channel,
+			HeadBufferManager headBufferMamager) {
 		this.readKey = readKey;
 		this.channel = channel;
-		// 4字节大小的buffer，获取data的长度
-		lenBuff = ByteBuffer.allocate(4);
+		this.headBufferManager = headBufferMamager;
 	}
 
 	/**
@@ -69,14 +73,13 @@ class Connection {
 	 * @throws IOException
 	 */
 	public Call readCall() throws IOException {
-		if (lenBuff.remaining() > 0) {
-			channel.read(lenBuff);
-			return null; // 还未读取完call对象
-		}
+		if (lenBuffer == null)
+			setLengthBuffer();
+		if (!lenBuffer.readLength(channel))
+			return null;
+
 		if (dataBuff == null) {
-			lenBuff.flip();
-			dataBuff = ByteBuffer.allocate(lenBuff.getInt());
-			lenBuff.position(4); // 重新设置回lenBuff装满数据的状态
+			dataBuff = ByteBuffer.allocate(lenBuffer.getLength());
 		}
 		if (dataBuff.remaining() > 0)
 			channel.read(dataBuff);
@@ -118,6 +121,25 @@ class Connection {
 		try {
 			channel.close();
 		} catch (IOException e) {
+		}
+		cleanLengthBuffer();
+	}
+
+	private void cleanLengthBuffer() {
+		try {
+			lenBuffer.release();
+		} catch (HeadBufferException e) {
+			e.printStackTrace();
+		}
+		lenBuffer = null;
+	}
+
+	private void setLengthBuffer() {
+		lenBuffer = headBufferManager.achiveHeadBuffer();
+		try {
+			lenBuffer.retain();
+		} catch (HeadBufferException e) {
+			e.printStackTrace();
 		}
 	}
 

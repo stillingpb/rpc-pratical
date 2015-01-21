@@ -2,6 +2,10 @@ package rpc.ipc.server;
 
 import java.util.concurrent.BlockingQueue;
 
+import rpc.ipc.server.headBuffer.factory.PooledHeadBufferFactory;
+import rpc.ipc.server.headBuffer.manager.CachedHeadBufferPool;
+import rpc.ipc.server.headBuffer.manager.HeadBufferManager;
+
 public class ServerContext {
 	/**
 	 * 控制服务器启停的变量
@@ -11,6 +15,13 @@ public class ServerContext {
 	static int DEFAULT_READER_NUM = 1;
 	static int DEFAULT_HANDLER_NUM = 1;
 	static int DEFAULT_RESPONDER_NUM = 1;
+
+	static HeadBufferManager DEFAULT_HEAD_BUFFER_MANAGER;
+
+	static {
+		DEFAULT_HEAD_BUFFER_MANAGER = CachedHeadBufferPool.newBuilder().setInitialSize(100)
+				.setIsDirect(false).setHeadBufferFactory(new PooledHeadBufferFactory()).build();
+	}
 
 	private String host;
 	private int port;

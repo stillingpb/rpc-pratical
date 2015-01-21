@@ -1,25 +1,19 @@
-package rpc.ipc.server.headBuffer;
+package rpc.ipc.server.headBuffer.manager;
 
-public abstract class HeadBufferPool {
-	/**
-	 * 获取一个HeadBuffer
-	 * 
-	 * @return
-	 */
-	public abstract PooledHeadBuffer achiveHeadBuffer();
+import rpc.ipc.server.headBuffer.factory.HeadBufferFactory;
 
-	/**
-	 * 还回HeadBuffer到池中
-	 * 
-	 * @param hBuffer
-	 */
-	public abstract void returnBackHeadBuffer(PooledHeadBuffer hBuffer);
+public abstract class HeadBufferPool implements HeadBufferManager {
+	public static Builder newBuilder() {
+		return null;
+	}
 
-	public abstract Builder newBuilder();
-
-	public abstract class Builder {
+	public static abstract class Builder {
 		protected int initSize = 5; // 默认大小
 		protected int capacity = 5;
+		/**
+		 * 使用directBuffer ,或者使用 headBuffer
+		 */
+		protected boolean isDirect = false;
 		protected HeadBufferFactory bufferFactory;
 
 		public Builder setInitialSize(int initSize) {
@@ -29,6 +23,11 @@ public abstract class HeadBufferPool {
 
 		public Builder setCapacity(int capacity) {
 			this.capacity = capacity;
+			return this;
+		}
+
+		public Builder setIsDirect(boolean isDirect) {
+			this.isDirect = isDirect;
 			return this;
 		}
 
