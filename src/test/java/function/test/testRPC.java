@@ -1,3 +1,5 @@
+package function.test;
+
 import rpc.io.ExceptionWritable;
 import rpc.io.IntWritable;
 import rpc.io.LongWritable;
@@ -8,10 +10,10 @@ public class testRPC {
     public static void main(String[] args) {
         testRPC t = new testRPC();
         t.init();
-        t.testReturnNull();
-        t.testReturnVoid();
         t.testGetMessage();
-        t.testReturnException();
+//        t.testReturnNull();
+//        t.testReturnVoid();
+//        t.testReturnException();
     }
 
     MessageServerProtocol rpcServer;

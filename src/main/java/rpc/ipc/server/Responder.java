@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.log4j.Logger;
 import rpc.ipc.util.RPCServerException;
 
 /**
@@ -17,6 +18,7 @@ import rpc.ipc.util.RPCServerException;
  * @author pb
  */
 class Responder extends Thread {
+    private Logger log4j = Logger.getLogger(Responder.class.getClass());
     private ServerContext context;
 
     private Selector writeSelector;
@@ -30,6 +32,7 @@ class Responder extends Thread {
         try {
             this.writeSelector = Selector.open();
         } catch (IOException e) {
+            log4j.fatal("responder 创建异常", e);
             throw new RPCServerException("responder 创建异常", e);
         }
     }
@@ -105,12 +108,11 @@ class Responder extends Thread {
         try {
             isWriteOver = conn.writeResult();
             if (isWriteOver) {
-                conn.reset();
+                key.cancel();
             }
         } catch (IOException e) {
-            RPCServerException serverException = new RPCServerException("writer 写出执行结果失败", e);
-            serverException.printStackTrace();
             conn.close();
+            log4j.error("writer 写出执行结果失败", e);
         }
     }
 }

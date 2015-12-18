@@ -1,5 +1,7 @@
 package rpc.io;
 
+import rpc.ipc.util.RPCServerException;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;

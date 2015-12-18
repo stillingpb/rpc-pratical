@@ -1,81 +1,101 @@
 package rpc.ipc.server;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
+
+import java.io.IOException;
+import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
 
 public class ServerContext {
-	/**
-	 * 控制服务器启停的变量
-	 */
-	volatile boolean running = true;
+    private static Logger log4j = Logger.getLogger(ServerContext.class.getClass());
 
-	static int DEFAULT_READER_NUM = 1;
-	static int DEFAULT_HANDLER_NUM = 1;
-	static int DEFAULT_RESPONDER_NUM = 1;
+    /**
+     * 控制服务器启停的变量
+     */
+    volatile boolean running = true;
 
-	private String host;
-	private int port;
-	private Object instance;
-	private BlockingQueue<Call> callQueue;
-	private Reader[] readers;
-	private Responder[] responders;
-	private int currentReader = 0;
-	private int currentResponder = 0;
+    static int DEFAULT_READER_NUM = 2;
+    static int DEFAULT_HANDLER_NUM = 2;
+    static int DEFAULT_RESPONDER_NUM = 2;
 
-	Reader getReader() {
-		currentReader = (currentReader + 1) % readers.length;
-		return readers[currentReader];
-	}
+    private String host;
+    private int port;
+    private Object instance;
+    private BlockingQueue<Call> callQueue;
+    private Reader[] readers;
+    private Responder[] responders;
+    private Integer currentReader = 0;
+    private Integer currentResponder = 0;
 
-	Responder getResponder() {
-		currentResponder = (currentResponder + 1) % responders.length;
-		return responders[currentResponder];
-	}
+    Reader getReader() {
+        synchronized (currentReader) {
+            currentReader = (currentReader + 1) % readers.length;
+            return readers[currentReader];
+        }
+    }
 
-	public Responder[] getResponders() {
-		return responders;
-	}
+    Responder getResponder() {
+        synchronized (currentResponder) {
+            currentResponder = (currentResponder + 1) % responders.length;
+            return responders[currentResponder];
+        }
+    }
 
-	public void setResponders(Responder[] responders) {
-		this.responders = responders;
-	}
+    static void closeChannel(SocketChannel channel) {
+        try {
+            channel.close();
+        } catch (IOException e) {
+            log4j.error("channel关闭异常", e);
+        }
+    }
 
-	public String getHost() {
-		return host;
-	}
+    public Responder[] getResponders() {
+        return responders;
+    }
 
-	public int getPort() {
-		return port;
-	}
+    public void setResponders(Responder[] responders) {
+        this.responders = responders;
+    }
 
-	public void setHost(String host) {
-		this.host = host;
-	}
+    public String getHost() {
+        return host;
+    }
 
-	public void setPort(int port) {
-		this.port = port;
-	}
+    public int getPort() {
+        return port;
+    }
 
-	public Object getInstance() {
-		return instance;
-	}
+    public void setHost(String host) {
+        this.host = host;
+    }
 
-	public void setInstance(Object instance) {
-		this.instance = instance;
-	}
+    public void setPort(int port) {
+        this.port = port;
+    }
 
-	public void setCallQueue(BlockingQueue<Call> callQueue) {
-		this.callQueue = callQueue;
-	}
+    public Object getInstance() {
+        return instance;
+    }
 
-	public BlockingQueue<Call> getCallQueue() {
-		return this.callQueue;
-	}
+    public void setInstance(Object instance) {
+        this.instance = instance;
+    }
 
-	public void setReaders(Reader[] readers) {
-		this.readers = readers;
-	}
+    public void setCallQueue(BlockingQueue<Call> callQueue) {
+        this.callQueue = callQueue;
+    }
 
-	public Reader[] getReaders() {
-		return readers;
-	}
+    public BlockingQueue<Call> getCallQueue() {
+        return this.callQueue;
+    }
+
+    public void setReaders(Reader[] readers) {
+        this.readers = readers;
+    }
+
+    public Reader[] getReaders() {
+        return readers;
+    }
 }

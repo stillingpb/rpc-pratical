@@ -6,10 +6,10 @@ import rpc.ipc.RPC;
 import java.util.Random;
 
 public class ClientObject {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         ClientObject client = new ClientObject();
         client.init();
-        client.singleThreadLoadTest(1000);
+        client.singleThreadLoadTest(10000);
     }
 
     ServerProtocol rpcServer;

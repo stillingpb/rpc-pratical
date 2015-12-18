@@ -1,79 +1,90 @@
 package rpc.ipc.server;
 
+import java.io.File;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.PropertyConfigurator;
 import rpc.ipc.util.RPCServerException;
 
 public class ServerStub {
-	private ServerContext context;
 
-	/**
-	 * 调用队列
-	 */
-	private BlockingQueue<Call> callQueue;
+    static {
+        BasicConfigurator.configure();
+        String curDir = System.getProperty("user.dir");
+        PropertyConfigurator.configure(curDir + File.separator + "target" + File.separator +
+                "classes" + File.separator + "log4j.properties");
+    }
 
-	private ExecutorService readPool;
-	private ExecutorService handlerPool;
-	private ExecutorService responsePool;
+    private ServerContext context;
 
-	private Listener listener = null;
-	private Responder[] responders = null;
-	private Reader[] readers;
-	private Handler[] handlers = null;
+    /**
+     * 调用队列
+     */
+    private BlockingQueue<Call> callQueue;
 
-	public ServerStub(Object instance, String host, int port) throws RPCServerException {
-		this(instance, host, port, ServerContext.DEFAULT_READER_NUM,
-				ServerContext.DEFAULT_HANDLER_NUM, ServerContext.DEFAULT_RESPONDER_NUM);
-	}
+    private ExecutorService readPool;
+    private ExecutorService handlerPool;
+    private ExecutorService responsePool;
 
-	public ServerStub(Object instance, String host, int port, int readerNum, int handlerNum,
-			int responseNum) throws RPCServerException {
-		context = new ServerContext();
-		context.setInstance(instance);
-		context.setHost(host);
-		context.setPort(port);
+    private Listener listener = null;
+    private Responder[] responders = null;
+    private Reader[] readers;
+    private Handler[] handlers = null;
 
-		callQueue = new LinkedBlockingQueue<Call>();
-		context.setCallQueue(callQueue);
+    public ServerStub(Object instance, String host, int port) throws RPCServerException {
+        this(instance, host, port, ServerContext.DEFAULT_READER_NUM,
+                ServerContext.DEFAULT_HANDLER_NUM, ServerContext.DEFAULT_RESPONDER_NUM);
+    }
 
-		responders = new Responder[responseNum];
-		for (int i = 0; i < responseNum; i++)
-			responders[i] = new Responder(context);
-		context.setResponders(responders);
+    public ServerStub(Object instance, String host, int port, int readerNum, int handlerNum,
+                      int responseNum) throws RPCServerException {
+        context = new ServerContext();
+        context.setInstance(instance);
+        context.setHost(host);
+        context.setPort(port);
 
-		readers = new Reader[readerNum];
-		for (int i = 0; i < readerNum; i++) {
-			readers[i] = new Reader(context);
-		}
-		context.setReaders(readers);
+        callQueue = new LinkedBlockingQueue<Call>();
+        context.setCallQueue(callQueue);
 
-		listener = new Listener(context);
+        responders = new Responder[responseNum];
+        for (int i = 0; i < responseNum; i++)
+            responders[i] = new Responder(context);
+        context.setResponders(responders);
 
-		handlers = new Handler[handlerNum];
-		for (int i = 0; i < handlerNum; i++)
-			handlers[i] = new Handler(context);
-	}
+        readers = new Reader[readerNum];
+        for (int i = 0; i < readerNum; i++) {
+            readers[i] = new Reader(context);
+        }
+        context.setReaders(readers);
 
-	public void start() {
-		handlerPool = Executors.newFixedThreadPool(handlers.length);
-		for (Handler handler : handlers)
-			handlerPool.execute(handler);
+        listener = new Listener(context);
 
-		responsePool = Executors.newFixedThreadPool(responders.length);
-		for (Responder responder : responders)
-			responsePool.execute(responder);
+        handlers = new Handler[handlerNum];
+        for (int i = 0; i < handlerNum; i++)
+            handlers[i] = new Handler(context);
+    }
 
-		readPool = Executors.newFixedThreadPool(readers.length);
-		for (Reader reader : readers)
-			readPool.execute(reader);
+    public void start() {
+        handlerPool = Executors.newFixedThreadPool(handlers.length);
+        for (Handler handler : handlers)
+            handlerPool.execute(handler);
 
-		listener.start();
-	}
+        responsePool = Executors.newFixedThreadPool(responders.length);
+        for (Responder responder : responders)
+            responsePool.execute(responder);
 
-	public void close() {
-		context.running = false;
-	}
+        readPool = Executors.newFixedThreadPool(readers.length);
+        for (Reader reader : readers)
+            readPool.execute(reader);
+
+        listener.start();
+    }
+
+    public void close() {
+        context.running = false;
+    }
 }

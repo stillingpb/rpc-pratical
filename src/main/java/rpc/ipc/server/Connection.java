@@ -7,12 +7,11 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.BlockingQueue;
 
 import rpc.io.Writable;
-import rpc.ipc.util.HeadBufferException;
 
 /**
  * 负责维护一次远程调用的连接，并控制请求数据的读，结果数据的写
@@ -20,23 +19,23 @@ import rpc.ipc.util.HeadBufferException;
  * @author pb
  */
 class Connection {
+
     SocketChannel channel;
     /*********************************/
     // 接收调用请求相关参数
-    private SelectionKey readKey;
+    private SelectionKey readSelectionKey;
     private volatile ByteBuffer lenBuffer;
-    private volatile ByteBuffer dataBuff;
+    private volatile ByteBuffer readBuffer;
 
     /*********************************/
 
     // 发送调用结果相关参数
-    private SelectionKey writeKey;
+    private SelectionKey writeSelectionKey;
     private ByteBuffer writeBuffer;
 
     /*********************************/
 
-    public Connection(SelectionKey readKey, SocketChannel channel) {
-        this.readKey = readKey;
+    public Connection(SocketChannel channel) {
         this.channel = channel;
     }
 
@@ -45,16 +44,12 @@ class Connection {
      *
      * @param result
      */
-    public void setResult(Writable result) {
+    public void setResult(Writable result) throws IOException {
         ByteArrayOutputStream response = new ByteArrayOutputStream();
         DataOutputStream out = new DataOutputStream(response);
         // 将结果序列化
-        try {
-            out.writeUTF(result.getClass().getName());
-            result.write(out);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        out.writeUTF(result.getClass().getName());
+        result.write(out);
         byte[] res = response.toByteArray();
         writeBuffer = ByteBuffer.allocate(res.length);
         writeBuffer.put(res);
@@ -64,38 +59,47 @@ class Connection {
     /**
      * 从连接中读取数据
      *
+     * @param callQueue
      * @return 如果一次调用没有读完数据，那么返回null，如果这次调用的数据读完了，返回一个call对象
      * @throws IOException
      */
-    public Call readCall() throws IOException {
+    public int readCall(BlockingQueue<Call> callQueue) throws IOException {
+        int count = 0;
         if (lenBuffer == null) {
             lenBuffer = ByteBuffer.allocate(4);
         }
         if (lenBuffer.remaining() > 0) {
-            channel.read(lenBuffer);
+            count = channel.read(lenBuffer);
             if (lenBuffer.remaining() > 0) {
-                return null;
+                return count;
             }
         }
 
-        if (dataBuff == null) {
+        if (readBuffer == null) {
             lenBuffer.flip();
             int dataLen = lenBuffer.getInt();
-            dataBuff = ByteBuffer.allocate(dataLen);
+            readBuffer = ByteBuffer.allocate(dataLen);
         }
-        if (dataBuff.remaining() > 0)
-            channel.read(dataBuff);
+        if (readBuffer.remaining() > 0) {
+            count = channel.read(readBuffer);
+        }
 
-        if (dataBuff.remaining() == 0) {
-            dataBuff.flip();
-            DataInput dis = new DataInputStream(new ByteArrayInputStream(dataBuff.array()));
+        if (readBuffer.remaining() == 0) {
+            readBuffer.flip();
+            DataInput dis = new DataInputStream(new ByteArrayInputStream(readBuffer.array()));
             lenBuffer = null;
-            dataBuff = null;
+            readBuffer = null;
             Call call = new Call();
+            call.setAttach(this);
             call.readFields(dis);
-            return call;
+            try {
+                callQueue.put(call);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
-        return null;
+        return count;
     }
 
     /**
@@ -117,32 +121,22 @@ class Connection {
      * 关闭连接，并将注册的read,write事件从readselectKey，writeselectKey的selector中移除
      */
     public void close() {
-        if (readKey != null) {
-            readKey.cancel();
-            readKey = null;
+        if (readSelectionKey != null) {
+            readSelectionKey.cancel();
+            readSelectionKey = null;
         }
-        if (writeKey != null) {
-            writeKey.cancel();
-            writeKey = null;
+        if (writeSelectionKey != null) {
+            writeSelectionKey.cancel();
+            writeSelectionKey = null;
         }
-        try {
-            channel.close();
-            channel = null;
-        } catch (IOException e) {
-        }
-    }
-
-    /**
-     * 重置连接，为获取下一次调用做准备
-     */
-    public void reset() {
-        if (writeKey != null) {
-            writeKey.cancel();
-            writeKey = null;
-        }
+        ServerContext.closeChannel(channel);
     }
 
     public void setWriteSelectionKey(SelectionKey key) {
-        this.writeKey = key;
+        this.writeSelectionKey = key;
+    }
+
+    public void setReadSelectionKey(SelectionKey readSelectionKey) {
+        this.readSelectionKey = readSelectionKey;
     }
 }

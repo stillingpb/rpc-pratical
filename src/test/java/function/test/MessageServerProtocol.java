@@ -1,3 +1,5 @@
+package function.test;
+
 import rpc.io.ExceptionWritable;
 import rpc.io.IntWritable;
 import rpc.io.LongWritable;
