@@ -14,6 +14,7 @@ public class DefaultConnectionPool implements ConnectionPool {
 
     private final int MAX_CONNECTION_SIZE; //最大连接数量
     private final int MAX_IDLE_CONNECTION; // 最大空闲连接数量
+    private final int SOCKET_TIMEOUT;
     private AtomicInteger connectionCount = new AtomicInteger(0);
     private ReentrantLock lock = new ReentrantLock();
     private Condition productCondi = lock.newCondition();
@@ -24,14 +25,15 @@ public class DefaultConnectionPool implements ConnectionPool {
     private Queue<Connection> pool = new LinkedList<Connection>();
 
     public DefaultConnectionPool(String ipcHost, Integer ipcPort) {
-        this(ipcHost, ipcPort, 20, 10);
+        this(ipcHost, ipcPort, 20, 10, 0);
     }
 
-    public DefaultConnectionPool(String ipcHost, Integer ipcPort, int maxSize, int maxIdelSize) {
+    public DefaultConnectionPool(String ipcHost, Integer ipcPort, int maxSize, int maxIdelSize, int socketTimeout) {
         this.ipcHost = ipcHost;
         this.ipcPort = ipcPort;
         MAX_CONNECTION_SIZE = maxSize;
         MAX_IDLE_CONNECTION = maxIdelSize;
+        SOCKET_TIMEOUT = socketTimeout;
     }
 
     private Connection createConnection() throws RPCClientException {
@@ -43,6 +45,9 @@ public class DefaultConnectionPool implements ConnectionPool {
         }
         try {
             Socket socket = new Socket(ipcHost, ipcPort);
+            socket.setTcpNoDelay(true);
+            socket.setKeepAlive(true);
+            socket.setSoTimeout(SOCKET_TIMEOUT);
             return new ConnectionProxy(this, socket);
         } catch (IOException e) {
             throw new RPCClientException("创建socket连接出现异常", e);
@@ -80,7 +85,7 @@ public class DefaultConnectionPool implements ConnectionPool {
         try {
             if (pool.size() >= MAX_IDLE_CONNECTION) {
                 connectionCount.decrementAndGet();
-                closeConnection(conn);
+                closeRealConnection(conn);
             } else {
                 pool.offer(conn);
                 productCondi.signal();
@@ -90,7 +95,10 @@ public class DefaultConnectionPool implements ConnectionPool {
         }
     }
 
-    private void closeConnection(Connection conn) throws RPCClientException {
-        conn.close();
+    private void closeRealConnection(Connection conn) throws RPCClientException {
+        if (conn instanceof ConnectionProxy) {
+            Connection realConn = ((ConnectionProxy) conn).getRealConnection();
+            realConn.close();
+        }
     }
 }

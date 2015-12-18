@@ -1,9 +1,5 @@
 package performance.load;
 
-import performance.load.ServerProtocol;
-import rpc.io.ExceptionWritable;
-import rpc.io.IntWritable;
-import rpc.io.LongWritable;
 import rpc.io.Text;
 import rpc.ipc.RPC;
 import rpc.ipc.server.ServerStub;
@@ -22,9 +18,11 @@ public class ServerObject implements ServerProtocol {
         }
     }
 
+    private int count;
+
     @Override
     public Text echo(Text t) {
-        int len = 512 + new Random().nextInt(200);
+        int len = 500 + new Random().nextInt(200);
         String str = "";
         for (int i = 0; i < len; i++) {
             str += ((char) ('a' + (i % 26)));

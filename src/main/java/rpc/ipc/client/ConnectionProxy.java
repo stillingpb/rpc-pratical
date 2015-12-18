@@ -26,6 +26,10 @@ public class ConnectionProxy implements Connection {
     }
 
     public void close() throws RPCClientException {
-        connectionPool.releaseConnection(realConnection);
+        connectionPool.releaseConnection(this);
+    }
+
+    public Connection getRealConnection() {
+        return realConnection;
     }
 }

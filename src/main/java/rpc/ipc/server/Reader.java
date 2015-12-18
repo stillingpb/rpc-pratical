@@ -91,7 +91,6 @@ class Reader extends Thread {
 	}
 
 	private void doRead(SelectionKey key) {
-//		Connection conn = (Connection) key.attachment();
 		Connection conn = (Connection) key.attachment();
 		try {
 			Call call = conn.readCall();

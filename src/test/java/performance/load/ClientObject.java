@@ -2,13 +2,14 @@ package performance.load;
 
 import rpc.io.Text;
 import rpc.ipc.RPC;
+
 import java.util.Random;
 
 public class ClientObject {
     public static void main(String[] args) {
         ClientObject client = new ClientObject();
         client.init();
-        client.singleThreadLoadTest(10);
+        client.singleThreadLoadTest(1000);
     }
 
     ServerProtocol rpcServer;
@@ -34,7 +35,7 @@ public class ClientObject {
     private void printResult(int times, long beginTime) {
         long endTime = System.currentTimeMillis();
         System.out.println("test is over. runtime: " +
-                (endTime - beginTime) / 1000 + "s\tavgTime: " +
+                (endTime - beginTime) + "ms\tavgTime: " +
                 (endTime - beginTime) / times + "ms");
     }
 
@@ -44,14 +45,16 @@ public class ClientObject {
             long endTime = System.currentTimeMillis();
             System.out.println(((int) (100 * rate / RATE_PERCENT)) + "%\t" +
                     curRound + "/" + times + "\truntime: " +
-                    (endTime - beginTime) / 1000 + "s\tavgTime: " +
+                    (endTime - beginTime) + "ms\tavgTime: " +
                     (endTime - beginTime) / curRound + "ms");
             rateVisited[rate] = true;
         }
     }
 
+    private int count;
+
     private Text generateText() {
-        int len = 512 + new Random().nextInt(200);
+        int len = 500 + new Random().nextInt(200);
         String str = "";
         for (int i = 0; i < len; i++) {
             str += ((char) ('a' + (i % 26)));

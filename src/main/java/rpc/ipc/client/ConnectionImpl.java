@@ -8,7 +8,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
-import java.util.concurrent.Callable;
 
 import rpc.io.Writable;
 import rpc.ipc.util.RPCClientException;

@@ -11,7 +11,7 @@ public class ClientStub {
     private ConnectionPool connectionPool;
 
     public ClientStub(String host, int port) {
-        ConnectionPool connectionPool = new DefaultConnectionPool(host, port);
+        ConnectionPool connectionPool = new DefaultConnectionPool(host, port, 1, 1, 0);
         this.connectionPool = connectionPool;
     }
 
