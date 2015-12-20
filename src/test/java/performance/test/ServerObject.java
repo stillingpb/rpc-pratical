@@ -1,4 +1,4 @@
-package performance.load;
+package performance.test;
 
 import rpc.io.Text;
 import rpc.ipc.RPC;
@@ -18,14 +18,20 @@ public class ServerObject implements ServerProtocol {
         }
     }
 
-    private int count;
+    int count = 0;
 
     @Override
     public Text echo(Text t) {
+        System.out.println(count++);
         int len = 500 + new Random().nextInt(200);
         String str = "";
         for (int i = 0; i < len; i++) {
             str += ((char) ('a' + (i % 26)));
+        }
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return new Text(str);
     }

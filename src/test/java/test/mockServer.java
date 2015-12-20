@@ -81,6 +81,9 @@ public class mockServer {
             SocketChannel channel = (SocketChannel) key.attachment();
             try {
                 int i = channel.read(buffer);
+                if(i == -1){
+                    key.cancel();
+                }
                 System.out.println(i);
             } catch (IOException e) {
                 e.printStackTrace();

@@ -1,4 +1,4 @@
-package performance.load;
+package performance.test;
 
 import rpc.io.Text;
 

@@ -87,8 +87,6 @@ class ConnectionImpl implements Connection {
 
     public void close() throws RPCClientException {
         try {
-            socket.getInputStream().close();
-            socket.getOutputStream().close();
             socket.close();
         } catch (IOException e) {
             throw new RPCClientException("关闭socket异常", e);

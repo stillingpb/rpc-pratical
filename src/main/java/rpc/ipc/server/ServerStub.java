@@ -12,7 +12,7 @@ import rpc.ipc.util.RPCServerException;
 
 public class ServerStub {
 
-    static {
+    static { //设置log4j的配置文件位置
         BasicConfigurator.configure();
         String curDir = System.getProperty("user.dir");
         PropertyConfigurator.configure(curDir + File.separator + "target" + File.separator +

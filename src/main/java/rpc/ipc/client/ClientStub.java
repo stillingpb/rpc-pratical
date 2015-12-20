@@ -27,4 +27,15 @@ public class ClientStub {
         return result;
     }
 
+    public void shutdownRoughly() throws RPCClientException {
+        connectionPool.closeRoughly();
+    }
+
+    public void shutdownSoftly() throws RPCClientException {
+        connectionPool.closeSoftly();
+    }
+
+    public boolean isTerminited(){
+        return connectionPool.isCloseComplemented();
+    }
 }

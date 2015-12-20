@@ -9,7 +9,7 @@ public class test {
         s.setTcpNoDelay(true);
         s.getOutputStream().write("hello".getBytes());
         s.getOutputStream().flush();
+        s.getOutputStream().close();
         s.close();
-        Thread.sleep(1000000);
     }
 }
