@@ -1,4 +1,4 @@
-package rpc.ipc.client;
+package rpc.ipc.client.connection;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
@@ -10,6 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 
 import rpc.io.Writable;
+import rpc.ipc.client.Call;
 import rpc.ipc.util.RPCClientException;
 
 /**

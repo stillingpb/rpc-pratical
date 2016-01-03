@@ -1,6 +1,7 @@
-package rpc.ipc.client;
+package rpc.ipc.client.connection;
 
 import rpc.io.Writable;
+import rpc.ipc.client.Call;
 import rpc.ipc.util.RPCClientException;
 
 import java.net.Socket;

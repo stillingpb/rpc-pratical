@@ -1,10 +1,9 @@
 package rpc.ipc.client;
 
-import java.util.concurrent.FutureTask;
-
-import rpc.io.ExceptionWritable;
-import rpc.io.NullWritable;
 import rpc.io.Writable;
+import rpc.ipc.client.connection.Connection;
+import rpc.ipc.client.connection.ConnectionPool;
+import rpc.ipc.client.connection.DefaultConnectionPool;
 import rpc.ipc.util.RPCClientException;
 
 public class ClientStub {

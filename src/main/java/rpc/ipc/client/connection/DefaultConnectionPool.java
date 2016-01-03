@@ -1,6 +1,5 @@
-package rpc.ipc.client;
+package rpc.ipc.client.connection;
 
-import rpc.ipc.RPC;
 import rpc.ipc.util.RPCClientException;
 
 import java.io.IOException;

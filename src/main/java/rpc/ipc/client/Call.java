@@ -11,7 +11,7 @@ import rpc.io.Writable;
  *
  * @author pb
  */
-class Call implements Writable {
+public class Call implements Writable {
 
     private String methodName;
     private Writable[] parameters;

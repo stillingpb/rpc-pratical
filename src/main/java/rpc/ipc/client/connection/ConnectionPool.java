@@ -1,4 +1,4 @@
-package rpc.ipc.client;
+package rpc.ipc.client.connection;
 
 import rpc.ipc.util.RPCClientException;
 
