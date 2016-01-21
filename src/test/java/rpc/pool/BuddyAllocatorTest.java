@@ -13,10 +13,10 @@ public class BuddyAllocatorTest {
 
     public static void main(String[] args) {
         BuddyAllocator pool = new BuddyAllocator(4);
-        System.out.println(pool.alloc(2));
-        System.out.println(pool.alloc(1));
-        System.out.println(pool.alloc(2));
-        System.out.println(pool.alloc(1));
+        System.out.println(pool.obtainIdelPagePosition(2));
+        System.out.println(pool.obtainIdelPagePosition(1));
+        System.out.println(pool.obtainIdelPagePosition(2));
+        System.out.println(pool.obtainIdelPagePosition(1));
         printWeight(pool);
         pool.free(4, 2);
         printWeight(pool);

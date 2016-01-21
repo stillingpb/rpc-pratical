@@ -1,35 +1,52 @@
 package rpc.pool;
 
-import java.nio.ByteBuffer;
-
 public class ByteBuffPool {
-    private static final int DEFAULT_MAX_LEVEL = 4;
-    private static final int DEFAULT_PAGE_LEVEL = 1;
-    private int pageSize;
-    private int maxLevel;
-    private int chunkSize;
-    private byte[] data;
+    static final int PAGE_SIZE = 1024;
 
-    private BuddyAllocator allocator;
+    private SlabChunk slabChunk;
+    private BuddyChunk buddyChunk;
 
     public ByteBuffPool() {
-        pageSize = DEFAULT_PAGE_LEVEL;
-        maxLevel = DEFAULT_MAX_LEVEL;
-        chunkSize = pageSize << maxLevel;
-        data = new byte[chunkSize];
-        allocator = new BuddyAllocator(maxLevel);
     }
 
-    public ByteBuff allocate(int capacity) {
-        int offset = allocator.alloc(capacity);
-        ByteBuffer buf = ByteBuffer.wrap(data, offset, capacity);
-        ByteBuff wrapper = new ByteBuff(buf, offset, capacity);
-        return wrapper;
+    public ByteBuff allocate(int reqCapacity) {
+        ByteBuff buff = null;
+        int normalCapacity = normalizeCapacity(reqCapacity);
+        if (normalCapacity < PAGE_SIZE) {
+            buff = allocateInArena();
+        }
+        if (buff == null) {
+            buff = allocateInChunk(normalCapacity);
+        }
+        return buff;
     }
 
-    public void free(ByteBuff buf) {
-        int offset = buf.offset;
-        int capacity = buf.capacity;
-        allocator.free(offset, capacity);
+    private ByteBuff allocateInChunk(int normalCapacity) {
+        return buddyChunk.allocate(normalCapacity);
+    }
+
+    private ByteBuff allocateInArena() {
+        return null;
+    }
+
+    int normalizeCapacity(int capacity) {
+        if (capacity < 0) {
+            throw new RuntimeException("size too small");
+        }
+        if (capacity > ((Integer.MAX_VALUE >> 1) + 1)) {
+            throw new RuntimeException("size too big");
+        }
+        if ((capacity & (capacity - 1)) == 0) {
+            return capacity;
+        }
+        if (capacity < 512) {
+            capacity |= capacity >> 1;
+            capacity |= capacity >> 2;
+            capacity |= capacity >> 4;
+            capacity |= capacity >> 8;
+            capacity |= capacity >> 16;
+            return capacity + 1;
+        }
+        return (capacity & 0xFFFFFF00) + 16;
     }
 }

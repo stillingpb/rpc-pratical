@@ -3,7 +3,7 @@ package rpc.pool;
 class BuddyAllocator {
     int maxLevel;
     int weightLen;
-    int[] weights;
+    int[] weights; // an binary weight tree
 
     public BuddyAllocator(int maxLevel) {
         this.maxLevel = maxLevel;
@@ -17,7 +17,7 @@ class BuddyAllocator {
         }
     }
 
-    public int alloc(int size) {
+    public int obtainIdelPagePosition(int size) {
         size = fixSize(size);
         if (weights[0] < size) {
             return -1;
