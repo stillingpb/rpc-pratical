@@ -1,32 +1,20 @@
 package rpc.pool;
 
 public class ByteBuffPool {
-    static final int PAGE_SIZE = 1024;
+    static final int PAGE_SIZE = 4096;
+    static final int MAX_LEVEL = 11;
 
-    private SlabChunk slabChunk;
-    private BuddyChunk buddyChunk;
+    PoolArea poolArea;
 
     public ByteBuffPool() {
+        poolArea = new PoolArea(PAGE_SIZE, MAX_LEVEL);
     }
 
     public ByteBuff allocate(int reqCapacity) {
-        ByteBuff buff = null;
+        ByteBuff buff = new ByteBuff();
         int normalCapacity = normalizeCapacity(reqCapacity);
-        if (normalCapacity < PAGE_SIZE) {
-            buff = allocateInArena();
-        }
-        if (buff == null) {
-            buff = allocateInChunk(normalCapacity);
-        }
+        poolArea.allocate(buff, reqCapacity, normalCapacity);
         return buff;
-    }
-
-    private ByteBuff allocateInChunk(int normalCapacity) {
-        return buddyChunk.allocate(normalCapacity);
-    }
-
-    private ByteBuff allocateInArena() {
-        return null;
     }
 
     int normalizeCapacity(int capacity) {

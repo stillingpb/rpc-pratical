@@ -1,11 +1,11 @@
 package rpc.pool;
 
-class BuddyAllocator {
+class BuddyPageAllocator {
     int maxLevel;
     int weightLen;
     int[] weights; // an binary weight tree
 
-    public BuddyAllocator(int maxLevel) {
+    public BuddyPageAllocator(int maxLevel) {
         this.maxLevel = maxLevel;
         this.weightLen = (1 << maxLevel) - 1;
         this.weights = new int[weightLen];

@@ -3,17 +3,18 @@ package rpc.pool;
 import java.nio.*;
 
 public class ByteBuff {
-    private ByteBuffer delegator;
     int offset;
     int capacity;
-    PoolOrigin poolOrigin;
+    PoolChunk poolChunk;
+    private ByteBuffer delegator;
 
-    ByteBuff(ByteBuffer delegator, PoolOrigin poolOrigin, int offset, int capacity) {
-        this.delegator = delegator;
-        this.poolOrigin = poolOrigin;
+    public void init(PoolChunk poolChunk, int offset, int capacity) {
+        this.poolChunk = poolChunk;
         this.offset = offset;
         this.capacity = capacity;
+        this.delegator = ByteBuffer.wrap(poolChunk.getMemory(), offset, capacity);
     }
+
 
     public ByteBuffer getByteBuffer() {
         return delegator;

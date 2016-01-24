@@ -1,29 +1,60 @@
 package rpc.pool;
 
-import java.util.HashSet;
-import java.util.Set;
+/**
+ * manage a page of memory with slab alogrithm.
+ */
+public class SlabChunk implements PoolChunk {
+    private SubpagePool subpagePool;
+    private BuddyChunk buddyChunk;
+    private byte[] memory;
+    private int beginOffset;
+    private int pageSize;
+    int elemCapacity;
+    private int maxElemNum;
+    private int usedElemNum;
+    private SlabSubpageAllocator slabAllocator;
 
-public class SlabChunk {
-    SlabOrigin slabOrigins[];
-    Set<SlabOrigin> fullSlabAllocators;
+    public SlabChunk(BuddyChunk buddy, int pageSize, int elemCapacity) {
+        this.buddyChunk = buddy;
+        this.subpagePool = buddy.subpagePool;
+        this.memory = buddy.memory;
+        this.beginOffset = buddy.allocateSlabPage();
+        this.pageSize = pageSize;
+        this.elemCapacity = elemCapacity;
 
-    public SlabChunk() {
-        slabOrigins = new SlabOrigin[32];
-        fullSlabAllocators = new HashSet<SlabOrigin>();
+        this.maxElemNum = pageSize / elemCapacity;
+        this.usedElemNum = 0;
+        slabAllocator = new SlabSubpageAllocator(maxElemNum);
+
+        subpagePool.addToPool(this);
     }
 
-    public ByteBuff allocate(BuddyOrigin buddy, int elemCapacity) {
-        int idx = getSlabAllocatorIdx(elemCapacity);
-        if (slabOrigins[idx] == null) {
-            slabOrigins[idx] = new SlabOrigin(buddy, ByteBuffPool.PAGE_SIZE, elemCapacity);
+    @Override
+    public int allocate(int capacity) {
+        assert capacity == elemCapacity;
+        int pos = slabAllocator.obtainIdelPosition();
+        if (pos < 0) {
+            return -1;
         }
-        return slabOrigins[idx].allocate(elemCapacity);
+        int handle = pos * elemCapacity;
+        if (++usedElemNum == maxElemNum) {
+            subpagePool.removeFromPool(this);
+        }
+        return handle;
     }
 
-    private int getSlabAllocatorIdx(int elemCapacity) {
-        if (elemCapacity >= 512) {
-            throw new RuntimeException();
+    @Override
+    public void free(int handle, int capacity) { // TODO
+        assert elemCapacity == capacity;
+        int pos = handle / elemCapacity;
+        slabAllocator.free(pos);
+        if (--usedElemNum == 0) {
+            buddyChunk.free(beginOffset, pageSize); // TODO
         }
-        return (elemCapacity - 1) >> 4;
+    }
+
+    @Override
+    public byte[] getMemory() {
+        return memory;
     }
 }

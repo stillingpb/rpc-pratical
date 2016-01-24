@@ -2,7 +2,7 @@ package rpc.pool;
 
 public class BuddyAllocatorTest {
 
-    public static void printWeight(BuddyAllocator pool) {
+    public static void printWeight(BuddyPageAllocator pool) {
         for (int i = 1, j = 0; i <= pool.maxLevel; i++) {
             for (; j <= (1 << i) - 2; j++) {
                 System.out.print(pool.weights[j] + " ");
@@ -12,7 +12,7 @@ public class BuddyAllocatorTest {
     }
 
     public static void main(String[] args) {
-        BuddyAllocator pool = new BuddyAllocator(4);
+        BuddyPageAllocator pool = new BuddyPageAllocator(4);
         System.out.println(pool.obtainIdelPagePosition(2));
         System.out.println(pool.obtainIdelPagePosition(1));
         System.out.println(pool.obtainIdelPagePosition(2));

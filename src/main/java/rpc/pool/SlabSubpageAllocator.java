@@ -1,10 +1,10 @@
 package rpc.pool;
 
-public class SlabAllocator {
+public class SlabSubpageAllocator {
     private int bitMapLength;
     private long[] bitMap; // 0 - idle, 1 - used
 
-    public SlabAllocator(int maxElemNum) {
+    public SlabSubpageAllocator(int maxElemNum) {
         bitMapLength = (maxElemNum + 63) >>> 6;
         bitMap = new long[bitMapLength];
     }
