@@ -5,6 +5,8 @@ public class BuddyChunk implements PoolChunk {
     private final int pageSize;
     private final int maxLevel;
     private final int chunkSize;
+    private final int totalPageNum;
+    private int usedPages;
 
     BuddyChunk nextChunk;
     BuddyChunk preChunk;
@@ -17,6 +19,9 @@ public class BuddyChunk implements PoolChunk {
         this.pageSize = pageSize;
         this.maxLevel = maxLevel;
         this.chunkSize = pageSize << maxLevel;
+
+        this.totalPageNum = 1 << maxLevel;
+
         this.memory = new byte[chunkSize];
         pageAllocator = new BuddyPageAllocator(maxLevel);
     }
@@ -37,12 +42,13 @@ public class BuddyChunk implements PoolChunk {
     }
 
     @Override
-    public int allocate(int capacity) {
-        int page = capacity2Page(capacity);
+    public int allocate(int normCapacity) {
+        int page = capacity2Page(normCapacity);
         int pos = pageAllocator.obtainIdelPagePosition(page);
         if (pos < 0) { // allocate failure
             return -1;
         }
+        usedPages += page;
         int handle = pos * pageSize;
         return handle;
     }
@@ -52,6 +58,6 @@ public class BuddyChunk implements PoolChunk {
     }
 
     public int usage() {
-        return 10;//TODO
+        return 100 * usedPages / totalPageNum;
     }
 }

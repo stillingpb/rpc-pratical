@@ -1,44 +1,43 @@
 package rpc.pool;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class SubpagePool {
+    private final int maxSubpageSize;
+    private final int subpageLevel;
     SlabChunk slabChunks[];
-    Set<SlabChunk> fullSlabAllocators; // TODO
 
-    public SubpagePool() {
-        slabChunks = new SlabChunk[32];
-        fullSlabAllocators = new HashSet<SlabChunk>();
+    public SubpagePool(int maxSubpageSize, int subpageLevel) {
+        this.maxSubpageSize = maxSubpageSize;
+        this.subpageLevel = subpageLevel;
+        int chunkLen = maxSubpageSize >> subpageLevel;
+        slabChunks = new SlabChunk[chunkLen];
     }
 
     public boolean allocate(ByteBuff buff, int reqCapacity, int elemCapacity) {
-        int idx = getSlabAllocatorIdx(elemCapacity);
-        if (slabChunks[idx] == null) {
+        int idx = getSlabChunkIdx(elemCapacity);
+        SlabChunk slabChunk = slabChunks[idx];
+        if (slabChunk == null) {
             return false;
         }
-        int handle = slabChunks[idx].allocate(elemCapacity);
+        int handle = slabChunk.allocate(elemCapacity);
         if (handle < 0) {
             return false;
         }
-        buff.init(slabChunks[idx], handle, reqCapacity);
+        buff.init(slabChunk, handle, reqCapacity);
         return true;
     }
 
-    private int getSlabAllocatorIdx(int elemCapacity) {
-        if (elemCapacity >= 512) {
-            throw new RuntimeException();
-        }
-        return (elemCapacity - 1) >> 4;
+    private int getSlabChunkIdx(int elemCapacity) {
+        assert elemCapacity <= maxSubpageSize;
+        return (elemCapacity - 1) >> subpageLevel;
     }
 
     public void addToPool(SlabChunk chunk) {
-        int idx = getSlabAllocatorIdx(chunk.elemCapacity);
+        int idx = getSlabChunkIdx(chunk.elemCapacity);
         slabChunks[idx] = chunk;
     }
 
     public void removeFromPool(SlabChunk chunk) {
-        int idx = getSlabAllocatorIdx(chunk.elemCapacity);
+        int idx = getSlabChunkIdx(chunk.elemCapacity);
         slabChunks[idx] = null;
     }
 }

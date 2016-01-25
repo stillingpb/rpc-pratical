@@ -1,6 +1,7 @@
 package rpc.pool;
 
 public class BuddyChunkList {
+    private PoolArea poolArea;
     BuddyChunkList nextList;
     BuddyChunkList preList;
     private final int minUseRate;
@@ -8,19 +9,19 @@ public class BuddyChunkList {
 
     private BuddyChunk head;
 
-    public BuddyChunkList(int minUseRate, int maxUseRate) {
+    public BuddyChunkList(PoolArea poolArea, int minUseRate, int maxUseRate) {
+        this.poolArea = poolArea;
         this.minUseRate = minUseRate;
         this.maxUseRate = maxUseRate;
     }
 
-    public boolean allocate(ByteBuff buff, int normalCapacity) {
+    public boolean allocate(ByteBuff buff, int reqCapacity, int normCapacity) {
         if (head == null) {
             return false;
         }
         for (BuddyChunk cur = head; cur != null; ) {
-            int handle = cur.allocate(normalCapacity);
-            if (handle >= 0) {
-                buff.init(cur, handle, normalCapacity);
+            boolean rst = poolArea.allocateFromChunk(cur, buff, reqCapacity, normCapacity);
+            if (rst) {
                 checkUsageAndMove(cur);
                 return true;
             } else {
@@ -30,6 +31,10 @@ public class BuddyChunkList {
         return false;
     }
 
+    /**
+     * check chunk usage, and move chunk between chunkList.
+     * @param chunk buddyChunk
+     */
     private void checkUsageAndMove(BuddyChunk chunk) {
         int usage = chunk.usage();
         if (usage >= maxUseRate) {

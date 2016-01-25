@@ -11,10 +11,18 @@ public class ByteBuffPool {
     }
 
     public ByteBuff allocate(int reqCapacity) {
-        ByteBuff buff = new ByteBuff();
+        ByteBuff buff = getByteBuff();
         int normalCapacity = normalizeCapacity(reqCapacity);
         poolArea.allocate(buff, reqCapacity, normalCapacity);
         return buff;
+    }
+
+    /**
+     * get an byteBuff object, which has not initialized
+     * @return
+     */
+    private ByteBuff getByteBuff() {
+        return new ByteBuff();
     }
 
     int normalizeCapacity(int capacity) {

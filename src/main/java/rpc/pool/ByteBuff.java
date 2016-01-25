@@ -10,9 +10,13 @@ public class ByteBuff {
 
     public void init(PoolChunk poolChunk, int offset, int capacity) {
         this.poolChunk = poolChunk;
+        init(poolChunk.getMemory(), offset, capacity);
+    }
+
+    public void init(byte[] memory, int offset, int capacity) {
         this.offset = offset;
         this.capacity = capacity;
-        this.delegator = ByteBuffer.wrap(poolChunk.getMemory(), offset, capacity);
+        this.delegator = ByteBuffer.wrap(memory, offset, capacity);
     }
 
 
