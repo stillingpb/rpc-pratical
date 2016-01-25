@@ -3,6 +3,7 @@ package rpc.pool;
 public class BuddyChunk implements PoolChunk {
     SubpagePool subpagePool;
     private final int pageSize;
+    private final int pageSizeLevel;
     private final int maxLevel;
     private final int chunkSize;
     private final int totalPageNum;
@@ -17,6 +18,7 @@ public class BuddyChunk implements PoolChunk {
     public BuddyChunk(SubpagePool subpagePool, int pageSize, int maxLevel) {
         this.subpagePool = subpagePool;
         this.pageSize = pageSize;
+        this.pageSizeLevel = pageSize2Level(pageSize);
         this.maxLevel = maxLevel;
         this.chunkSize = pageSize << maxLevel;
 
@@ -26,6 +28,15 @@ public class BuddyChunk implements PoolChunk {
         pageAllocator = new BuddyPageAllocator(maxLevel);
     }
 
+    private int pageSize2Level(int pageSize) {
+        for (int i = 0; i < 32; i++) {
+            if ((pageSize & (1 << i)) != 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
 
     int allocateSlabPage() {
         return pageAllocator.obtainIdelPagePosition(1);
@@ -33,7 +44,9 @@ public class BuddyChunk implements PoolChunk {
 
     @Override
     public void free(int handle, int capacity) {
-        pageAllocator.free(handle, capacity);
+        int pageOffset = handle >> pageSizeLevel;
+        int page = capacity >> pageSizeLevel;
+        pageAllocator.free(pageOffset, page);
     }
 
     @Override
@@ -43,18 +56,14 @@ public class BuddyChunk implements PoolChunk {
 
     @Override
     public int allocate(int normCapacity) {
-        int page = capacity2Page(normCapacity);
+        int page = normCapacity >> pageSizeLevel;
         int pos = pageAllocator.obtainIdelPagePosition(page);
         if (pos < 0) { // allocate failure
             return -1;
         }
         usedPages += page;
-        int handle = pos * pageSize;
+        int handle = pos << pageSizeLevel;
         return handle;
-    }
-
-    int capacity2Page(int capacity) {
-        return capacity / pageSize;
     }
 
     public int usage() {

@@ -15,7 +15,7 @@ public class BuddyAllocatorTest {
         BuddyPageAllocator pool = new BuddyPageAllocator(4);
         System.out.println(pool.obtainIdelPagePosition(2));
         System.out.println(pool.obtainIdelPagePosition(1));
-        System.out.println(pool.obtainIdelPagePosition(2));
+        System.out.println(pool.obtainIdelPagePosition(4));
         System.out.println(pool.obtainIdelPagePosition(1));
         printWeight(pool);
         pool.free(4, 2);
