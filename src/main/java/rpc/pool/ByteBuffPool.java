@@ -4,28 +4,34 @@ public class ByteBuffPool {
     static final int PAGE_SIZE = 4096;
     static final int MAX_LEVEL = 11;
 
-    PoolArea poolArea;
+    static PoolArea poolArea;
 
-    public ByteBuffPool() {
+    static {
         poolArea = new PoolArea(PAGE_SIZE, MAX_LEVEL);
     }
 
-    public ByteBuff allocate(int reqCapacity) {
+    public static ByteBuff allocate(int reqCapacity) {
         ByteBuff buff = getByteBuff();
         int normalCapacity = normalizeCapacity(reqCapacity);
         poolArea.allocate(buff, reqCapacity, normalCapacity);
         return buff;
     }
 
+    public static void free(ByteBuff buff) {
+        int normalCapacity = normalizeCapacity(buff.capacity);
+        poolArea.free(buff, normalCapacity);
+    }
+
     /**
      * get an byteBuff object, which has not initialized
+     *
      * @return
      */
-    private ByteBuff getByteBuff() {
+    private static ByteBuff getByteBuff() {
         return new ByteBuff();
     }
 
-    int normalizeCapacity(int capacity) {
+    private static int normalizeCapacity(int capacity) {
         if (capacity < 0) {
             throw new RuntimeException("size too small");
         }

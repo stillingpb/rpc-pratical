@@ -41,7 +41,7 @@ public class PoolArea {
     public synchronized void allocate(ByteBuff buff, int reqCapacity, int normalCapacity) {
         if (normalCapacity < chunkSize) {
             if (isTinyCapacity(normalCapacity) &&
-                    allocateTinyFromSubpagePool(buff, reqCapacity, normalCapacity)) {
+                    allocateFromSubpagePool(buff, reqCapacity, normalCapacity)) {
                 return;
             }
             allocateNormal(buff, reqCapacity, normalCapacity);
@@ -50,22 +50,14 @@ public class PoolArea {
         }
     }
 
-    /**
-     * allocate from subpage pool.
-     *
-     * @return allocate if success.
-     */
-    private boolean allocateTinyFromSubpagePool(ByteBuff buff, int reqCapacity, int normalCapacity) {
-        return subpagePool.allocate(buff, reqCapacity, normalCapacity);
+    public synchronized void free(ByteBuff buff, int normalCapacity) {
+        PoolChunk chunk = buff.poolChunk;
+        chunk.free(buff.handle, normalCapacity);
     }
 
-    private void allocateHuge(ByteBuff buff, int reqCapacity, int normalCapacity) {
+    private void allocateHuge(ByteBuff buff, int reqCapacity, int normCapacity) {
         byte[] data = new byte[reqCapacity]; // TODO
-        buff.init(data, reqCapacity, normalCapacity);
-    }
-
-    private boolean isTinyCapacity(int capacity) {
-        return capacity <= 512; // TODO
+        buff.init(data, 0, reqCapacity);
     }
 
     private void allocateNormal(ByteBuff buff, int reqCapacity, int normCapacity) {
@@ -73,13 +65,13 @@ public class PoolArea {
                 || qInit.allocate(buff, reqCapacity, normCapacity) || q075.allocate(buff, reqCapacity, normCapacity)) {
             return;
         }
-        BuddyChunk buddyChunk = new BuddyChunk(subpagePool, pageSize, maxLevel);
+        BuddyChunk buddyChunk = new BuddyChunk(pageSize, maxLevel);
         allocateFromChunk(buddyChunk, buff, reqCapacity, normCapacity);
         qInit.addChunk(buddyChunk);
     }
 
     /**
-     * allocate memory from buddy chunk, or slab chunk.
+     * allocate several pages of memory from buddy chunk, or slab chunk.
      *
      * @return if allocate success
      */
@@ -89,7 +81,7 @@ public class PoolArea {
             return false;
         }
         if (normCapacity <= maxSubpageSize) {
-            SlabChunk slabChunk = new SlabChunk(buddyChunk, pageSize, normCapacity);
+            SlabChunk slabChunk = new SlabChunk(subpagePool, buddyChunk, pageSize, normCapacity);
             int slabHandle = slabChunk.allocate(normCapacity);
             if (slabHandle < 0) {
                 return false;
@@ -99,5 +91,18 @@ public class PoolArea {
             buff.init(buddyChunk, buddyHandle, reqCapacity);
         }
         return true;
+    }
+
+    /**
+     * allocate tiny memory from subpage pool.
+     *
+     * @return allocate if success.
+     */
+    private boolean allocateFromSubpagePool(ByteBuff buff, int reqCapacity, int normalCapacity) {
+        return subpagePool.allocate(buff, reqCapacity, normalCapacity);
+    }
+
+    private boolean isTinyCapacity(int capacity) {
+        return capacity <= maxSubpageSize;
     }
 }

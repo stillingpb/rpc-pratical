@@ -7,7 +7,9 @@ public class BuddyChunkList {
     private final int minUseRate;
     private final int maxUseRate;
 
-    private BuddyChunk head;
+    BuddyChunk head;
+
+    private int chunkNum;
 
     public BuddyChunkList(PoolArea poolArea, int minUseRate, int maxUseRate) {
         this.poolArea = poolArea;
@@ -33,9 +35,10 @@ public class BuddyChunkList {
 
     /**
      * check chunk usage, and move chunk between chunkList.
+     *
      * @param chunk buddyChunk
      */
-    private void checkUsageAndMove(BuddyChunk chunk) {
+    void checkUsageAndMove(BuddyChunk chunk) {
         int usage = chunk.usage();
         if (usage >= maxUseRate) {
             this.removeChunk(chunk);
@@ -51,7 +54,6 @@ public class BuddyChunkList {
     void removeChunk(BuddyChunk chunk) {
         if (chunk == head) {
             head = chunk.nextChunk;
-            head.preChunk = null;
         } else {
             BuddyChunk pre = chunk.preChunk;
             pre.nextChunk = chunk.nextChunk;
@@ -61,9 +63,12 @@ public class BuddyChunkList {
         }
         chunk.preChunk = null;
         chunk.nextChunk = null;
+        chunk.chunkList = null;
+        chunkNum--;
     }
 
     void addChunk(BuddyChunk chunk) {
+        chunk.chunkList = this;
         if (head == null) {
             head = chunk;
         } else {
@@ -74,5 +79,10 @@ public class BuddyChunkList {
                 chunk.nextChunk.preChunk = chunk;
             }
         }
+        chunkNum++;
+    }
+
+    int getChunkNum() {
+        return chunkNum;
     }
 }

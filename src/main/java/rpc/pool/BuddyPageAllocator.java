@@ -1,16 +1,17 @@
 package rpc.pool;
 
 class BuddyPageAllocator {
-    int maxLevel;
-    int weightLen;
-    int[] weights; // an binary weight tree
+    private final int weightLen;
+    private final int[] weights; // an binary weight tree
+    private final int maxDepth; // the deep of weight tree
+    private final static int SPACE_USED = 0;
 
-    public BuddyPageAllocator(int maxLevel) {
-        this.maxLevel = maxLevel;
-        this.weightLen = (1 << maxLevel) - 1;
+    public BuddyPageAllocator(int maxDepth) {
+        this.maxDepth = maxDepth;
+        this.weightLen = (1 << maxDepth) - 1;
         this.weights = new int[weightLen];
-        for (int i = 1, j = 0; i <= maxLevel; i++) {
-            int w = level2Weight(i - 1);
+        for (int i = 1, j = 0; i <= maxDepth; i++) {
+            int w = depth2Weight(i - 1);
             for (; j <= (1 << i) - 2; j++) {
                 weights[j] = w;
             }
@@ -41,7 +42,7 @@ class BuddyPageAllocator {
                 index = leftWeight >= rightWeight ? leftIndex : rightIndex;
             }
         }
-        weights[index] = 0;
+        weights[index] = SPACE_USED;
         int parIndex = parNodeIndex(index);
         while (parIndex >= 0) {
             int leftSubWeight = subNodeWeight(parIndex, true);
@@ -67,19 +68,19 @@ class BuddyPageAllocator {
             level++;
         }
         int levelOffest = index - (1 << level) + 1;
-        int weight = level2Weight(level);
+        int weight = depth2Weight(level);
         int offest = weight * levelOffest;
         return offest;
     }
 
     private int offset2Index(int offset, int weight) {
-        int baseIndex = (1 << (maxLevel - 1)) / weight - 1;
+        int baseIndex = (1 << (maxDepth - 1)) / weight - 1;
         int levelOffest = offset / weight;
         return baseIndex + levelOffest;
     }
 
-    private int level2Weight(int weight) {
-        return 1 << (maxLevel - weight - 1);
+    private int depth2Weight(int weight) {
+        return 1 << (maxDepth - weight - 1);
     }
 
     /**
@@ -109,9 +110,12 @@ class BuddyPageAllocator {
         }
     }
 
-    public void free(int offset, int size) {
+    public boolean free(int offset, int size) {
         int weight = fixSize(size);
         int index = offset2Index(offset, weight);
+        if (weights[index] != SPACE_USED) {
+            return false;
+        }
         weights[index] = weight;
         int parIndex = parNodeIndex(index);
         weight <<= 1;
@@ -132,6 +136,7 @@ class BuddyPageAllocator {
             weight <<= 1;
             parIndex = parNodeIndex(parIndex);
         }
+        return true;
     }
 
     int fixSize(int size) {
@@ -150,5 +155,16 @@ class BuddyPageAllocator {
         size |= size >> 8;
         size |= size >> 16;
         return size + 1;
+    }
+
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1, j = 0; i <= maxDepth; i++) {
+            for (; j <= (1 << i) - 2; j++) {
+                sb.append(weights[j]).append(' ');
+            }
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 }

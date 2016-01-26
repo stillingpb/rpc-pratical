@@ -38,11 +38,15 @@ public class SlabSubpageAllocator {
         return -1;
     }
 
-    void free(int pos) {
+    public boolean free(int pos) {
         assert (pos >= 0) && (pos < maxEleNum);
-        int i = pos >>> 6; //replace division operation
+        int i = pos >>> 6;
         int j = pos % 64;
+        if (((bitMap[i] >> j) & 1L) == 0) {
+            return false;
+        }
         bitMap[i] &= (~(1L << j));
+        return true;
     }
 
     public String toString() {

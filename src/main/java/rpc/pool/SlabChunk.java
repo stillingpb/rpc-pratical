@@ -10,24 +10,21 @@ public class SlabChunk implements PoolChunk {
     private BuddyChunk buddyChunk;
     private byte[] memory;
     private int baseOffset;
-    private int pageSize;
     int elemCapacity;
     private int elemCapacityLevel;
     private int maxElemNum;
     private int usedElemNum;
     private SlabSubpageAllocator slabAllocator;
 
-    public SlabChunk(BuddyChunk buddy, int pageSize, int elemCapacity) {
+    public SlabChunk(SubpagePool subpagePool, BuddyChunk buddy, int pageSize, int elemCapacity) {
+        this.subpagePool = subpagePool;
         this.buddyChunk = buddy;
-        this.subpagePool = buddy.subpagePool;
         this.memory = buddy.memory;
         this.baseOffset = buddy.allocateOnePage();
-        this.pageSize = pageSize;
         this.elemCapacity = elemCapacity;
         this.elemCapacityLevel = power2Level(elemCapacity);
 
         this.maxElemNum = pageSize >> elemCapacityLevel;
-        this.usedElemNum = 0;
         slabAllocator = new SlabSubpageAllocator(maxElemNum);
 
         subpagePool.addToPool(this);
@@ -48,20 +45,24 @@ public class SlabChunk implements PoolChunk {
     }
 
     @Override
-    public void free(int handle, int capacity) { // TODO
-        assert elemCapacity == capacity;
+    public void free(int handle, int normalCapacity) {
+        assert elemCapacity == normalCapacity;
         int offset = (handle - baseOffset) >> elemCapacityLevel;
-        slabAllocator.free(offset);
-        if (--usedElemNum == 0) {
-            buddyChunk.free(baseOffset, pageSize); // TODO
+        if (slabAllocator.free(offset)) {
+            usedElemNum--;
         }
+        checkIfFree2BuddyChunk();
+    }
+
+    private void checkIfFree2BuddyChunk() {
+        // TODO
     }
 
     public int getBaseOffset() {
         return baseOffset;
     }
 
-    public SlabSubpageAllocator getSlabAllocator(){
+    public SlabSubpageAllocator getSlabAllocator() {
         return slabAllocator;
     }
 

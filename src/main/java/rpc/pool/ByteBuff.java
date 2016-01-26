@@ -3,20 +3,20 @@ package rpc.pool;
 import java.nio.*;
 
 public class ByteBuff {
-    int offset;
+    int handle;
     int capacity;
-    PoolChunk poolChunk;
     private ByteBuffer delegator;
+    PoolChunk poolChunk;
 
-    public void init(PoolChunk poolChunk, int offset, int capacity) {
+    public void init(PoolChunk poolChunk, int handle, int capacity) {
         this.poolChunk = poolChunk;
-        init(poolChunk.getMemory(), offset, capacity);
+        init(poolChunk.getMemory(), handle, capacity);
     }
 
-    public void init(byte[] memory, int offset, int capacity) {
-        this.offset = offset;
+    public void init(byte[] memory, int handle, int capacity) {
+        this.handle = handle;
         this.capacity = capacity;
-        this.delegator = ByteBuffer.wrap(memory, offset, capacity);
+        this.delegator = ByteBuffer.wrap(memory, handle, capacity);
     }
 
 
@@ -25,6 +25,6 @@ public class ByteBuff {
     }
 
     public void free() {
-        ; // TODO
+        ByteBuffPool.free(this);
     }
 }

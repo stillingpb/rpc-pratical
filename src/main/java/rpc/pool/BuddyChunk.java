@@ -3,7 +3,6 @@ package rpc.pool;
 import static rpc.pool.PoolUtil.power2Level;
 
 public class BuddyChunk implements PoolChunk {
-    SubpagePool subpagePool;
     private final int pageSize;
     private final int pageSizeLevel;
     private final int maxLevel;
@@ -11,14 +10,14 @@ public class BuddyChunk implements PoolChunk {
     private final int totalPageNum;
     private int usedPages;
 
+    BuddyChunkList chunkList;
     BuddyChunk nextChunk;
     BuddyChunk preChunk;
 
     final byte[] memory;
     final BuddyPageAllocator pageAllocator;
 
-    public BuddyChunk(SubpagePool subpagePool, int pageSize, int maxLevel) {
-        this.subpagePool = subpagePool;
+    public BuddyChunk(int pageSize, int maxLevel) {
         this.pageSize = pageSize;
         this.pageSizeLevel = power2Level(pageSize);
         this.maxLevel = maxLevel;
@@ -27,7 +26,7 @@ public class BuddyChunk implements PoolChunk {
         this.totalPageNum = 1 << maxLevel;
 
         this.memory = new byte[chunkSize];
-        pageAllocator = new BuddyPageAllocator(maxLevel);
+        pageAllocator = new BuddyPageAllocator(maxLevel + 1); // depth equals to level+1
     }
 
     int allocateOnePage() {
@@ -36,10 +35,15 @@ public class BuddyChunk implements PoolChunk {
     }
 
     @Override
-    public void free(int handle, int capacity) {
+    public void free(int handle, int normalCapacity) {
         int pageOffset = handle >> pageSizeLevel;
-        int page = capacity >> pageSizeLevel;
-        pageAllocator.free(pageOffset, page);
+        int page = normalCapacity >> pageSizeLevel;
+        if (pageAllocator.free(pageOffset, page)) { // free success
+            usedPages -= page;
+        }
+        if (chunkList != null) { // update chunkList info
+            chunkList.checkUsageAndMove(this);
+        }
     }
 
     @Override
