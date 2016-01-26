@@ -10,9 +10,8 @@ public class SlabChunk implements PoolChunk {
     private BuddyChunk buddyChunk;
     private byte[] memory;
     private int baseOffset;
-    int elemCapacity;
-    private int elemCapacityLevel;
-    private int maxElemNum;
+    int elemCapacity;  // eleCapacity可能不是2的n次方.
+    private int eleAmount; // the amount of element.
     private int usedElemNum;
     private SlabSubpageAllocator slabAllocator;
 
@@ -22,10 +21,9 @@ public class SlabChunk implements PoolChunk {
         this.memory = buddy.memory;
         this.baseOffset = buddy.allocateOnePage();
         this.elemCapacity = elemCapacity;
-        this.elemCapacityLevel = power2Level(elemCapacity);
 
-        this.maxElemNum = pageSize >> elemCapacityLevel;
-        slabAllocator = new SlabSubpageAllocator(maxElemNum);
+        this.eleAmount = pageSize / elemCapacity;
+        slabAllocator = new SlabSubpageAllocator(eleAmount);
 
         subpagePool.addToPool(this);
     }
@@ -37,8 +35,8 @@ public class SlabChunk implements PoolChunk {
         if (offset < 0) {
             return -1;
         }
-        int handle = baseOffset + (offset << elemCapacityLevel);
-        if (++usedElemNum == maxElemNum) {
+        int handle = baseOffset + (offset * elemCapacity);
+        if (++usedElemNum == eleAmount) {
             subpagePool.removeFromPool(this);
         }
         return handle;
@@ -47,7 +45,7 @@ public class SlabChunk implements PoolChunk {
     @Override
     public void free(int handle, int normalCapacity) {
         assert elemCapacity == normalCapacity;
-        int offset = (handle - baseOffset) >> elemCapacityLevel;
+        int offset = (handle - baseOffset) / elemCapacity;
         if (slabAllocator.free(offset)) {
             usedElemNum--;
         }

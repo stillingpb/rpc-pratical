@@ -1,16 +1,14 @@
 package rpc.pool;
 
-import static rpc.pool.PoolUtil.power2Level;
-
 public class SlabSubpageAllocator {
-    private int maxEleNum;
+    private int elemAmount;
     private int bitMapLength;
     private long[] bitMap; // 0 - idle, 1 - used
 
-    public SlabSubpageAllocator(int maxElemNum) {
-        assert maxElemNum > 0;
-        this.maxEleNum = maxElemNum;
-        bitMapLength = (maxElemNum + 63) >>> 6;
+    public SlabSubpageAllocator(int elemAmount) {
+        assert elemAmount > 0;
+        this.elemAmount = elemAmount;
+        bitMapLength = (elemAmount + 63) >>> 6;
         bitMap = new long[bitMapLength];
     }
 
@@ -39,7 +37,7 @@ public class SlabSubpageAllocator {
     }
 
     public boolean free(int pos) {
-        assert (pos >= 0) && (pos < maxEleNum);
+        assert (pos >= 0) && (pos < elemAmount);
         int i = pos >>> 6;
         int j = pos % 64;
         if (((bitMap[i] >> j) & 1L) == 0) {
@@ -51,7 +49,7 @@ public class SlabSubpageAllocator {
 
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < maxEleNum; i++) {
+        for (int i = 0; i < elemAmount; i++) {
             int j = i >>> 6;
             int k = i % 64;
             sb.append((bitMap[j] >> k) & 1L).append(' ');

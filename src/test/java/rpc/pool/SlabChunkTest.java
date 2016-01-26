@@ -11,14 +11,14 @@ public class SlabChunkTest {
     public void test() {
         int pageSize = 1024;
         int elemCapacity = 64;
-        SubpagePool pool = new SubpagePool(pageSize / 2, 4);
+        SubpagePool pool = new SubpagePool(pageSize / 2, elemCapacity);
         BuddyChunk buddy = new BuddyChunk(pageSize, 2);
-        assertEquals(buddy.allocate(pageSize), 0);
+        assertEquals(0, buddy.allocate(pageSize));
         SlabChunk slab = new SlabChunk(pool, buddy, pageSize, elemCapacity);
         int baseOffset = slab.getBaseOffset();
-        assertEquals(baseOffset, pageSize * 1);
+        assertEquals(pageSize * 1, baseOffset);
         for (int i = 0; i < pageSize / elemCapacity; i++) {
-            assertEquals(slab.allocate(elemCapacity), baseOffset + i * elemCapacity);
+            assertEquals(baseOffset + i * elemCapacity, slab.allocate(elemCapacity));
         }
 
         SlabSubpageAllocator allocator = slab.getSlabAllocator();

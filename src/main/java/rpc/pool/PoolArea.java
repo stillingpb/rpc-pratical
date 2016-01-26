@@ -27,7 +27,7 @@ public class PoolArea {
         link(q050, q075);
 
         this.maxSubpageSize = pageSize >> 1;
-        subpagePool = new SubpagePool(maxSubpageSize, 4);
+        subpagePool = new SubpagePool(maxSubpageSize, 16);
     }
 
     private void link(BuddyChunkList pre, BuddyChunkList next) {

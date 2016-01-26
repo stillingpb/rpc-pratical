@@ -2,19 +2,37 @@ package rpc.pool;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class SubpagePoolTest {
 
     @Test
     public void test() {
-        int pageSize = 128;  // 2 ^ 7
-        SubpagePool pool = new SubpagePool(pageSize >> 1, 4); // pool size: 2^4
+        int pageSize = 128;
+        int maxCapacity = 64;
+        int minCapacity = 16;
+        SubpagePool pool = new SubpagePool(maxCapacity, minCapacity);
         BuddyChunk buddy = new BuddyChunk(pageSize, 2);
-        for (int i = 0; i < 16; i++) {
-            int elemCapacity = 16 * i;
-            SlabChunk slab = new SlabChunk(pool, buddy, pageSize, elemCapacity);
+        SlabChunk[] slabs = pool.slabChunks;
+        for (int i = 0; i < maxCapacity / minCapacity; i++) {
+            int elemCapacity = minCapacity * (i + 1);
+            slabs[i] = new SlabChunk(pool, buddy, pageSize, elemCapacity);
         }
 
         ByteBuff buff = new ByteBuff();
-        pool.allocate(buff,16,16);
+        for (int i = 0; i < maxCapacity / minCapacity; i++) {
+            int capacity = minCapacity * (i + 1);
+            for (int j = 0; j < pageSize / capacity; j++) {
+                boolean rst = pool.allocate(buff, capacity, capacity);
+                assertEquals(true, rst);
+                if (j < pageSize / capacity - 1) {
+                    assertEquals(pool.slabChunks[i], buff.poolChunk);
+                } else {
+                    assertEquals(null, pool.slabChunks[i]);
+                }
+            }
+        }
+
+
     }
 }
