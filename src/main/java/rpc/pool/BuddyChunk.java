@@ -1,5 +1,7 @@
 package rpc.pool;
 
+import static rpc.pool.PoolUtil.power2Level;
+
 public class BuddyChunk implements PoolChunk {
     SubpagePool subpagePool;
     private final int pageSize;
@@ -18,7 +20,7 @@ public class BuddyChunk implements PoolChunk {
     public BuddyChunk(SubpagePool subpagePool, int pageSize, int maxLevel) {
         this.subpagePool = subpagePool;
         this.pageSize = pageSize;
-        this.pageSizeLevel = pageSize2Level(pageSize);
+        this.pageSizeLevel = power2Level(pageSize);
         this.maxLevel = maxLevel;
         this.chunkSize = pageSize << maxLevel;
 
@@ -28,18 +30,9 @@ public class BuddyChunk implements PoolChunk {
         pageAllocator = new BuddyPageAllocator(maxLevel);
     }
 
-    private int pageSize2Level(int pageSize) {
-        for (int i = 0; i < 32; i++) {
-            if ((pageSize & (1 << i)) != 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-
-    int allocateSlabPage() {
-        return pageAllocator.obtainIdelPagePosition(1);
+    int allocateOnePage() {
+        int pageOffset = pageAllocator.obtainIdelPagePosition(1);
+        return pageOffset << pageSizeLevel;
     }
 
     @Override
@@ -57,12 +50,12 @@ public class BuddyChunk implements PoolChunk {
     @Override
     public int allocate(int normCapacity) {
         int page = normCapacity >> pageSizeLevel;
-        int pos = pageAllocator.obtainIdelPagePosition(page);
-        if (pos < 0) { // allocate failure
+        int pageOffset = pageAllocator.obtainIdelPagePosition(page);
+        if (pageOffset < 0) { // allocate failure
             return -1;
         }
         usedPages += page;
-        int handle = pos << pageSizeLevel;
+        int handle = pageOffset << pageSizeLevel;
         return handle;
     }
 

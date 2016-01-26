@@ -1,5 +1,7 @@
 package rpc.pool;
 
+import static rpc.pool.PoolUtil.power2Level;
+
 /**
  * manage a page of memory with slab alogrithm.
  */
@@ -7,9 +9,10 @@ public class SlabChunk implements PoolChunk {
     private SubpagePool subpagePool;
     private BuddyChunk buddyChunk;
     private byte[] memory;
-    private int beginOffset;
+    private int baseOffset;
     private int pageSize;
     int elemCapacity;
+    private int elemCapacityLevel;
     private int maxElemNum;
     private int usedElemNum;
     private SlabSubpageAllocator slabAllocator;
@@ -18,11 +21,12 @@ public class SlabChunk implements PoolChunk {
         this.buddyChunk = buddy;
         this.subpagePool = buddy.subpagePool;
         this.memory = buddy.memory;
-        this.beginOffset = buddy.allocateSlabPage();
+        this.baseOffset = buddy.allocateOnePage();
         this.pageSize = pageSize;
         this.elemCapacity = elemCapacity;
+        this.elemCapacityLevel = power2Level(elemCapacity);
 
-        this.maxElemNum = pageSize / elemCapacity;
+        this.maxElemNum = pageSize >> elemCapacityLevel;
         this.usedElemNum = 0;
         slabAllocator = new SlabSubpageAllocator(maxElemNum);
 
@@ -32,11 +36,11 @@ public class SlabChunk implements PoolChunk {
     @Override
     public int allocate(int capacity) {
         assert capacity == elemCapacity;
-        int pos = slabAllocator.obtainIdelPosition();
-        if (pos < 0) {
+        int offset = slabAllocator.obtainIdelPosition();
+        if (offset < 0) {
             return -1;
         }
-        int handle = pos * elemCapacity;
+        int handle = baseOffset + (offset << elemCapacityLevel);
         if (++usedElemNum == maxElemNum) {
             subpagePool.removeFromPool(this);
         }
@@ -46,11 +50,19 @@ public class SlabChunk implements PoolChunk {
     @Override
     public void free(int handle, int capacity) { // TODO
         assert elemCapacity == capacity;
-        int pos = handle / elemCapacity;
-        slabAllocator.free(pos);
+        int offset = (handle - baseOffset) >> elemCapacityLevel;
+        slabAllocator.free(offset);
         if (--usedElemNum == 0) {
-            buddyChunk.free(beginOffset, pageSize); // TODO
+            buddyChunk.free(baseOffset, pageSize); // TODO
         }
+    }
+
+    public int getBaseOffset() {
+        return baseOffset;
+    }
+
+    public SlabSubpageAllocator getSlabAllocator(){
+        return slabAllocator;
     }
 
     @Override
