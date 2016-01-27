@@ -51,12 +51,16 @@ public class PoolArea {
     }
 
     public synchronized void free(ByteBuff buff, int normalCapacity) {
-        PoolChunk chunk = buff.poolChunk;
-        chunk.free(buff.handle, normalCapacity);
+        if (normalCapacity < chunkSize) {
+            PoolChunk chunk = buff.poolChunk;
+            chunk.free(buff.handle, normalCapacity);
+        } else {
+            ; //do nothing, wait for gc.
+        }
     }
 
     private void allocateHuge(ByteBuff buff, int reqCapacity, int normCapacity) {
-        byte[] data = new byte[reqCapacity]; // TODO
+        byte[] data = new byte[reqCapacity];
         buff.init(data, 0, reqCapacity);
     }
 
@@ -73,21 +77,25 @@ public class PoolArea {
     /**
      * allocate several pages of memory from buddy chunk, or slab chunk.
      *
-     * @return if allocate success
+     * @return allocate result
      */
     boolean allocateFromChunk(BuddyChunk buddyChunk, ByteBuff buff, int reqCapacity, int normCapacity) {
-        int buddyHandle = buddyChunk.allocate(normCapacity);
-        if (buddyHandle < 0) {
-            return false;
-        }
         if (normCapacity <= maxSubpageSize) {
-            SlabChunk slabChunk = new SlabChunk(subpagePool, buddyChunk, pageSize, normCapacity);
+            int baseOffset = buddyChunk.allocateOnePage();
+            if (baseOffset < 0) {
+                return false;
+            }
+            SlabChunk slabChunk = new SlabChunk(subpagePool, buddyChunk, baseOffset, pageSize, normCapacity);
             int slabHandle = slabChunk.allocate(normCapacity);
             if (slabHandle < 0) {
                 return false;
             }
             buff.init(slabChunk, slabHandle, reqCapacity);
         } else {
+            int buddyHandle = buddyChunk.allocate(normCapacity);
+            if (buddyHandle < 0) {
+                return false;
+            }
             buff.init(buddyChunk, buddyHandle, reqCapacity);
         }
         return true;

@@ -16,7 +16,8 @@ public class SubpagePoolTest {
         SlabChunk[] slabs = pool.slabChunks;
         for (int i = 0; i < maxCapacity / minCapacity; i++) {
             int elemCapacity = minCapacity * (i + 1);
-            slabs[i] = new SlabChunk(pool, buddy, pageSize, elemCapacity);
+            int baseOffset = buddy.allocateOnePage();
+            slabs[i] = new SlabChunk(pool, buddy, baseOffset, pageSize, elemCapacity);
         }
 
         ByteBuff buff = new ByteBuff();

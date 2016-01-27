@@ -29,11 +29,6 @@ public class BuddyChunk implements PoolChunk {
         pageAllocator = new BuddyPageAllocator(maxLevel + 1); // depth equals to level+1
     }
 
-    int allocateOnePage() {
-        int pageOffset = pageAllocator.obtainIdelPagePosition(1);
-        return pageOffset << pageSizeLevel;
-    }
-
     @Override
     public void free(int handle, int normalCapacity) {
         int pageOffset = handle >> pageSizeLevel;
@@ -51,9 +46,23 @@ public class BuddyChunk implements PoolChunk {
         return this.memory;
     }
 
+
+    int allocateOnePage() {
+        int pageOffset = pageAllocator.obtainIdelPagePosition(1);
+        if (pageOffset < 0) {
+            return -1;
+        }
+        usedPages++;
+        int handle = pageOffset << pageSizeLevel;
+        return handle;
+    }
+
     @Override
     public int allocate(int normCapacity) {
         int page = normCapacity >> pageSizeLevel;
+        if (page <= 0) {
+            return -1;
+        }
         int pageOffset = pageAllocator.obtainIdelPagePosition(page);
         if (pageOffset < 0) { // allocate failure
             return -1;

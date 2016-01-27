@@ -44,6 +44,7 @@ public class SubpagePool {
             return;
         }
         slabChunks[idx] = chunk;
+        chunk.inSubpagePool = true;
     }
 
     public void removeFromPool(SlabChunk chunk) {
@@ -52,5 +53,6 @@ public class SubpagePool {
             return;
         }
         slabChunks[idx] = null;
+        chunk.inSubpagePool = false;
     }
 }

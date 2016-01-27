@@ -14,9 +14,9 @@ public class SlabChunkTest {
         SubpagePool pool = new SubpagePool(pageSize / 2, elemCapacity);
         BuddyChunk buddy = new BuddyChunk(pageSize, 2);
         assertEquals(0, buddy.allocate(pageSize));
-        SlabChunk slab = new SlabChunk(pool, buddy, pageSize, elemCapacity);
-        int baseOffset = slab.getBaseOffset();
-        assertEquals(pageSize * 1, baseOffset);
+        int baseOffset = buddy.allocateOnePage();
+        assertEquals(1 * pageSize, baseOffset);
+        SlabChunk slab = new SlabChunk(pool, buddy, baseOffset, pageSize, elemCapacity);
         for (int i = 0; i < pageSize / elemCapacity; i++) {
             assertEquals(baseOffset + i * elemCapacity, slab.allocate(elemCapacity));
         }

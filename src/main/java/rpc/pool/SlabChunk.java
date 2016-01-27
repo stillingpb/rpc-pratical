@@ -7,21 +7,25 @@ import static rpc.pool.PoolUtil.power2Level;
  */
 public class SlabChunk implements PoolChunk {
     private SubpagePool subpagePool;
+    boolean inSubpagePool;
     private BuddyChunk buddyChunk;
     private byte[] memory;
     private int baseOffset;
+    private int pageSize;
+
     int elemCapacity;  // eleCapacity可能不是2的n次方.
     private int eleAmount; // the amount of element.
     private int usedElemNum;
     private SlabSubpageAllocator slabAllocator;
 
-    public SlabChunk(SubpagePool subpagePool, BuddyChunk buddy, int pageSize, int elemCapacity) {
+    public SlabChunk(SubpagePool subpagePool, BuddyChunk buddy, int baseOffset, int pageSize, int elemCapacity) {
         this.subpagePool = subpagePool;
         this.buddyChunk = buddy;
         this.memory = buddy.memory;
-        this.baseOffset = buddy.allocateOnePage();
+        this.baseOffset = baseOffset;
         this.elemCapacity = elemCapacity;
 
+        this.pageSize = pageSize;
         this.eleAmount = pageSize / elemCapacity;
         slabAllocator = new SlabSubpageAllocator(eleAmount);
 
@@ -53,11 +57,10 @@ public class SlabChunk implements PoolChunk {
     }
 
     private void checkIfFree2BuddyChunk() {
-        // TODO
-    }
-
-    public int getBaseOffset() {
-        return baseOffset;
+        // if slabChunk is not in subpagePool, free slabChunk to buddyChunk.
+        if (!inSubpagePool) {
+            buddyChunk.free(baseOffset, pageSize);
+        }
     }
 
     public SlabSubpageAllocator getSlabAllocator() {
