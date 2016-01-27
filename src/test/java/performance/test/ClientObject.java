@@ -12,7 +12,7 @@ public class ClientObject {
         ClientObject client = new ClientObject();
         client.init();
 //        client.singleThreadLoadTest(10);
-        client.multiThreadLoadTest(21, 1);
+        client.multiThreadLoadTest(21, 10);
     }
 
     static ServerProtocol rpcServer;
@@ -29,7 +29,7 @@ public class ClientObject {
         for (int i = 0; i < nThread; i++) {
             executor.execute(new TestThread(barrier, i, times));
         }
-        while(!executor.isTerminated()){
+        while (!executor.isTerminated()) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {

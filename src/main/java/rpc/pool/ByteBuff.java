@@ -24,6 +24,14 @@ public class ByteBuff {
         return delegator;
     }
 
+    public int getOffset() {
+        return handle;
+    }
+
+    public int getCapacity() {
+        return capacity;
+    }
+
     public void free() {
         ByteBuffPool.free(this);
     }

@@ -12,6 +12,8 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.BlockingQueue;
 
 import rpc.io.Writable;
+import rpc.pool.ByteBuff;
+import rpc.pool.ByteBuffPool;
 
 /**
  * 负责维护一次远程调用的连接，并控制请求数据的读，结果数据的写
@@ -24,8 +26,10 @@ class Connection {
     /*********************************/
     // 接收调用请求相关参数
     private SelectionKey readSelectionKey;
-    private volatile ByteBuffer lenBuffer;
-    private volatile ByteBuffer readBuffer;
+    private ByteBuff lenBufferShell;
+    private ByteBuff readBufferShell;
+    private ByteBuffer lenBuffer;
+    private ByteBuffer readBuffer;
 
     /*********************************/
 
@@ -51,22 +55,22 @@ class Connection {
         out.writeUTF(result.getClass().getName());
         result.write(out);
         byte[] res = response.toByteArray();
-        writeBuffer = ByteBuffer.allocate(res.length);
-        writeBuffer.put(res);
-        writeBuffer.flip(); // 为读数据做准备
+        writeBuffer = ByteBuffer.wrap(res);
     }
 
     /**
-     * 从连接中读取数据
+     * 从连接中读取数据，如果已经读完所有的数据，则将一个call对象压入到callQueue中.
      *
      * @param callQueue
-     * @return 如果一次调用没有读完数据，那么返回null，如果这次调用的数据读完了，返回一个call对象
+     * @return 返回读到的字节数。如果返回-1，表示客户端已经关闭了连接
      * @throws IOException
      */
     public int readCall(BlockingQueue<Call> callQueue) throws IOException {
         int count = 0;
         if (lenBuffer == null) {
-            lenBuffer = ByteBuffer.allocate(4);
+            lenBufferShell = ByteBuffPool.allocate(4);
+            lenBuffer = lenBufferShell.getByteBuffer();
+            lenBuffer.mark();
         }
         if (lenBuffer.remaining() > 0) {
             count = channel.read(lenBuffer);
@@ -76,17 +80,22 @@ class Connection {
         }
 
         if (readBuffer == null) {
-            lenBuffer.flip();
+            lenBuffer.reset();
             int dataLen = lenBuffer.getInt();
-            readBuffer = ByteBuffer.allocate(dataLen);
+            readBufferShell = ByteBuffPool.allocate(dataLen);
+            readBuffer = readBufferShell.getByteBuffer();
         }
         if (readBuffer.remaining() > 0) {
             count = channel.read(readBuffer);
         }
 
         if (readBuffer.remaining() == 0) {
-            readBuffer.flip();
-            DataInput dis = new DataInputStream(new ByteArrayInputStream(readBuffer.array()));
+            DataInput dis = new DataInputStream(new ByteArrayInputStream(
+                    readBuffer.array(), readBufferShell.getOffset(), readBufferShell.getCapacity()));
+            lenBufferShell.free();
+            readBufferShell.free();
+            lenBufferShell = null;
+            readBufferShell = null;
             lenBuffer = null;
             readBuffer = null;
             Call call = new Call();

@@ -14,7 +14,7 @@ public class BuddyChunkListTest {
     BuddyChunkList q025;
     BuddyChunkList qInit;
     BuddyChunkList q075;
-    PoolArea area = new PoolArea(pageSize, maxLevel);
+    PoolArea area = new PoolArea(pageSize, maxLevel, pageSize / 2, 16);
 
     @Before
     public void init() {

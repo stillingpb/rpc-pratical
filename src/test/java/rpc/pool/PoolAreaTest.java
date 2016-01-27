@@ -19,7 +19,7 @@ public class PoolAreaTest {
 
     @Before
     public void init() {
-        area = new PoolArea(pageSize, maxLevel);
+        area = new PoolArea(pageSize, maxLevel, pageSize / 2, 16);
         try {
             Field f = PoolArea.class.getDeclaredField("subpagePool");
             f.setAccessible(true);
