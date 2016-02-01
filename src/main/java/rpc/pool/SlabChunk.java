@@ -1,7 +1,5 @@
 package rpc.pool;
 
-import static rpc.pool.PoolUtil.power2Level;
-
 /**
  * manage a page of memory with slab alogrithm.
  */

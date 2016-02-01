@@ -1,6 +1,6 @@
 package rpc.pool;
 
-import static rpc.pool.PoolUtil.power2Level;
+import static rpc.pool.PoolUtil.log2;
 
 public class SubpagePool {
     private final int maxCapacity;
@@ -9,7 +9,7 @@ public class SubpagePool {
 
     public SubpagePool(int maxCapacity, int minCapacity) {
         this.maxCapacity = maxCapacity;
-        this.minLevel = power2Level(minCapacity);
+        this.minLevel = log2(minCapacity);
         int chunkLen = maxCapacity >> minLevel;
         slabChunks = new SlabChunk[chunkLen];
     }

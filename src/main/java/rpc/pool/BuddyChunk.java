@@ -1,6 +1,6 @@
 package rpc.pool;
 
-import static rpc.pool.PoolUtil.power2Level;
+import static rpc.pool.PoolUtil.log2;
 
 public class BuddyChunk implements PoolChunk {
     private final int pageSize;
@@ -19,7 +19,7 @@ public class BuddyChunk implements PoolChunk {
 
     public BuddyChunk(int pageSize, int maxLevel) {
         this.pageSize = pageSize;
-        this.pageSizeLevel = power2Level(pageSize);
+        this.pageSizeLevel = log2(pageSize);
         this.maxLevel = maxLevel;
         this.chunkSize = pageSize << maxLevel;
 

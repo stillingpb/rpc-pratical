@@ -19,6 +19,13 @@ public class ByteBuff {
         this.delegator = ByteBuffer.wrap(memory, handle, capacity);
     }
 
+    public void free() {
+        ByteBuffPool.free(this);
+        this.poolChunk = null;
+        this.handle = 0;
+        this.capacity = 0;
+        this.delegator = null;
+    }
 
     public ByteBuffer getByteBuffer() {
         return delegator;
@@ -30,9 +37,5 @@ public class ByteBuff {
 
     public int getCapacity() {
         return capacity;
-    }
-
-    public void free() {
-        ByteBuffPool.free(this);
     }
 }
