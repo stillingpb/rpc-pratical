@@ -19,7 +19,7 @@ public class PoolAreaTest {
 
     @Before
     public void init() {
-        area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16);
+        area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16, false);
         try {
             Field f = PoolArena.class.getDeclaredField("subpagePool");
             f.setAccessible(true);
@@ -47,7 +47,7 @@ public class PoolAreaTest {
 
     @Test
     public void test() {
-        ByteBuff buff = new ByteBuff();
+        ByteBuff buff = new PooledHeapByteBuff();
         PoolChunk chunk = null;
         area.allocate(buff, pageSize, pageSize);
         chunk = buff.poolChunk;
@@ -55,7 +55,7 @@ public class PoolAreaTest {
         assertTrue(chunk instanceof BuddyChunk);
         assertEquals(1, getChunkNum(qInit));
 
-        ByteBuff buff2 = new ByteBuff();
+        ByteBuff buff2 = new PooledHeapByteBuff();
         area.allocate(buff2, 8 * pageSize - 1, 8 * pageSize);
         assertNotNull(buff2.getByteBuffer());
         assertEquals(chunk, buff2.poolChunk);
@@ -63,9 +63,9 @@ public class PoolAreaTest {
         assertEquals(8 * pageSize - 1, buff2.capacity);
         assertEquals(8 * pageSize, buff2.handle);
 
-        area.allocate(new ByteBuff(), pageSize, pageSize);
+        area.allocate(new PooledHeapByteBuff(), pageSize, pageSize);
         int elemCapacity = pageSize / 4;
-        ByteBuff buff3 = new ByteBuff();
+        ByteBuff buff3 = new PooledHeapByteBuff();
         area.allocate(buff3, elemCapacity, elemCapacity);
         assertEquals(elemCapacity, buff3.capacity);
         assertEquals(1, getChunkNum(q050));
@@ -73,15 +73,15 @@ public class PoolAreaTest {
         assertTrue(buff3.poolChunk instanceof SlabChunk);
         assertNotNull(subpagePool.slabChunks[elemCapacity / 16 - 1]);
 
-        ByteBuff buff4 = new ByteBuff();
-        ByteBuff buff5 = new ByteBuff();
-        ByteBuff buff6 = new ByteBuff();
+        ByteBuff buff4 = new PooledHeapByteBuff();
+        ByteBuff buff5 = new PooledHeapByteBuff();
+        ByteBuff buff6 = new PooledHeapByteBuff();
         area.allocate(buff4, elemCapacity, elemCapacity);
         area.allocate(buff5, elemCapacity, elemCapacity);
         area.allocate(buff6, elemCapacity, elemCapacity);
         assertNull(subpagePool.slabChunks[elemCapacity / 16 - 1]);
 
-        ByteBuff buff7 = new ByteBuff();
+        ByteBuff buff7 = new PooledHeapByteBuff();
         area.allocate(buff7, elemCapacity, elemCapacity);
         assertNotNull(subpagePool.slabChunks[elemCapacity / 16 - 1]);
 

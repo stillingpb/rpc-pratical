@@ -51,7 +51,5 @@ public class ObjectRecycler<T> {
 
     public static interface ObjectFactory<T> {
         public T createNewObject();
-
-        public void freeObject(T obj);
     }
 }

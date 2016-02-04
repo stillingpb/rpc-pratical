@@ -1,8 +1,10 @@
 package rpc.pool;
 
+import java.nio.ByteBuffer;
+
 import static rpc.pool.PoolUtil.log2;
 
-public class BuddyChunk implements PoolChunk {
+public abstract class BuddyChunk<T> implements PoolChunk {
     private final int pageSize;
     private final int pageSizeLevel;
     private final int maxLevel;
@@ -14,7 +16,7 @@ public class BuddyChunk implements PoolChunk {
     BuddyChunk nextChunk;
     BuddyChunk preChunk;
 
-    final byte[] memory;
+    final T memory;
     final BuddyPageAllocator pageAllocator;
 
     public BuddyChunk(int pageSize, int maxLevel) {
@@ -25,9 +27,11 @@ public class BuddyChunk implements PoolChunk {
 
         this.totalPageNum = 1 << maxLevel;
 
-        this.memory = new byte[chunkSize];
+        this.memory = newMemory(chunkSize);
         pageAllocator = new BuddyPageAllocator(maxLevel + 1); // depth equals to level+1
     }
+
+    protected abstract T newMemory(int chunkSize);
 
     @Override
     public synchronized void free(int handle, int normalCapacity) {
@@ -42,7 +46,7 @@ public class BuddyChunk implements PoolChunk {
     }
 
     @Override
-    public byte[] getMemory() {
+    public T getMemory() {
         return this.memory;
     }
 
@@ -64,7 +68,7 @@ public class BuddyChunk implements PoolChunk {
             return -1;
         }
         int pageOffset = pageAllocator.obtainIdelPagePosition(page);
-        if (pageOffset < 0) { // allocate failure
+        if (pageOffset < 0) { // allocated failure
             return -1;
         }
         usedPages += page;
@@ -75,4 +79,37 @@ public class BuddyChunk implements PoolChunk {
     public int usage() {
         return 100 * usedPages / totalPageNum;
     }
+
+    static BuddyChunk newHeapChunk(int pageSize, int maxLevel) {
+        return new BuddyHeapChunk(pageSize, maxLevel);
+    }
+
+    static BuddyChunk newDirectChunk(int pageSize, int maxLevel) {
+        return new BuddyDirectChunk(pageSize, maxLevel);
+    }
+
+    public static class BuddyHeapChunk extends BuddyChunk<byte[]> {
+
+        public BuddyHeapChunk(int pageSize, int maxLevel) {
+            super(pageSize, maxLevel);
+        }
+
+        @Override
+        protected byte[] newMemory(int chunkSize) {
+            return new byte[chunkSize];
+        }
+    }
+
+    static class BuddyDirectChunk extends BuddyChunk<ByteBuffer> {
+
+        public BuddyDirectChunk(int pageSize, int maxLevel) {
+            super(pageSize, maxLevel);
+        }
+
+        @Override
+        protected ByteBuffer newMemory(int chunkSize) {
+            return ByteBuffer.allocateDirect(chunkSize);
+        }
+    }
+
 }

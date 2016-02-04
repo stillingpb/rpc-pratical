@@ -12,7 +12,7 @@ public class SubpagePoolTest {
         int maxCapacity = 64;
         int minCapacity = 16;
         SubpagePool pool = new SubpagePool(maxCapacity, minCapacity);
-        BuddyChunk buddy = new BuddyChunk(pageSize, 2);
+        BuddyChunk buddy = new BuddyChunk.BuddyHeapChunk(pageSize, 2);
         SlabChunk[] slabs = pool.slabChunks;
         for (int i = 0; i < maxCapacity / minCapacity; i++) {
             int elemCapacity = minCapacity * (i + 1);
@@ -20,7 +20,7 @@ public class SubpagePoolTest {
             slabs[i] = new SlabChunk(pool, buddy, baseOffset, pageSize, elemCapacity);
         }
 
-        ByteBuff buff = new ByteBuff();
+        ByteBuff buff = new PooledHeapByteBuff();
         for (int i = 0; i < maxCapacity / minCapacity; i++) {
             int capacity = minCapacity * (i + 1);
             for (int j = 0; j < pageSize / capacity; j++) {

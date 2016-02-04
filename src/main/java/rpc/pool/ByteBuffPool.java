@@ -10,53 +10,78 @@ public class ByteBuffPool {
 
     private static int DEFAULT_ARENA_SIZE = 4;
     private static int arenaSize;
-    private static PoolArena[] poolArenas;
-    private static int idx;
-    private static ThreadLocal<ThreadLocalCache> threadLocalCaches;
+    private static PoolArena[] heapPoolArenas;
+    private static PoolArena[] directPoolArenas;
+    private static int heapIdx;
+    private static int directIdx;
+    private static ThreadLocal<ThreadLocalCache> heapThreadLocalCaches;
+    private static ThreadLocal<ThreadLocalCache> directThreadLocalCaches;
 
     private static final int BYTEBUFF_RECYCLE_SIZE = 200;
-    static ObjectRecycler<ByteBuff> byteBuffRecycler;
+    static ObjectRecycler<ByteBuff> heapByteBuffRecycler;
+    static ObjectRecycler<ByteBuff> directByteBuffRecycler;
 
     static {
         int processor = Runtime.getRuntime().availableProcessors();
         arenaSize = Math.min(processor, DEFAULT_ARENA_SIZE);
-        poolArenas = new PoolArena[arenaSize];
+        heapPoolArenas = new PoolArena[arenaSize];
         for (int i = 0; i < arenaSize; i++) {
-            poolArenas[i] = new PoolArena(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE);
+            heapPoolArenas[i] = new PoolArena(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE, false);
         }
-        threadLocalCaches = new ThreadLocal<ThreadLocalCache>();
-
-        ObjectRecycler.ObjectFactory<ByteBuff> byteBuffFactory = new ObjectRecycler.ObjectFactory<ByteBuff>() {
-            @Override
-            public ByteBuff createNewObject() {
-                return new ByteBuff();
-            }
-
-            @Override
-            public void freeObject(ByteBuff buff) {
-                buff = null; // set gc free
-            }
-        };
-        byteBuffRecycler = new ObjectRecycler<ByteBuff>(BYTEBUFF_RECYCLE_SIZE, byteBuffFactory);
+        heapThreadLocalCaches = new ThreadLocal<ThreadLocalCache>();
+        heapByteBuffRecycler = new ObjectRecycler<ByteBuff>(BYTEBUFF_RECYCLE_SIZE,
+                new ObjectRecycler.ObjectFactory<ByteBuff>() {
+                    public ByteBuff createNewObject() {
+                        return new PooledHeapByteBuff();
+                    }
+                });
+        directPoolArenas = new PoolArena[arenaSize];
+        for (int i = 0; i < arenaSize; i++) {
+            directPoolArenas[i] = new PoolArena(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE, true);
+        }
+        directThreadLocalCaches = new ThreadLocal<ThreadLocalCache>();
+        directByteBuffRecycler = new ObjectRecycler<ByteBuff>(BYTEBUFF_RECYCLE_SIZE,
+                new ObjectRecycler.ObjectFactory<ByteBuff>() {
+                    public ByteBuff createNewObject() {
+                        return new PooledDirectByteBuff();
+                    }
+                });
     }
 
-    static ThreadLocalCache obtainThreadLocalCache() {
+    static ThreadLocalCache obtainThreadLocalCache(boolean isDirect) {
+        ThreadLocal<ThreadLocalCache> threadLocalCaches = isDirect ? directThreadLocalCaches : heapThreadLocalCaches;
         ThreadLocalCache cache = threadLocalCaches.get();
         if (cache == null) {
-            synchronized (ThreadLocalCache.class) {
-                idx = (idx + 1) % arenaSize;
-                PoolArena arena = poolArenas[idx];
-                cache = new ThreadLocalCache(arena, MAX_SUBPAGE_SIZE / MIN_SUBPAGE_SIZE, 256, 1 << MAX_LEVEL, 64);
-                threadLocalCaches.set(cache);
-            }
+            PoolArena arena = getPoolArenas(isDirect);
+            cache = new ThreadLocalCache(arena, MAX_SUBPAGE_SIZE / MIN_SUBPAGE_SIZE, 256, 1 << MAX_LEVEL, 64);
+            threadLocalCaches.set(cache);
         }
         return cache;
     }
 
-    public static ByteBuff allocate(int reqCapacity) {
-        ByteBuff buff = getByteBuff();
+    private static synchronized PoolArena getPoolArenas(boolean isDirect) {
+        int idx = isDirect ? directIdx : heapIdx;
+        if (isDirect) {
+            directIdx = (directIdx + 1) % arenaSize;
+        } else {
+            heapIdx = (heapIdx + 1) % arenaSize;
+        }
+        PoolArena[] poolArenas = isDirect ? directPoolArenas : heapPoolArenas;
+        return poolArenas[idx];
+    }
+
+    public static ByteBuff allocateHeap(int reqCapacity) {
+        return allocate(reqCapacity, false);
+    }
+
+    public static ByteBuff allocateDirect(int reqCapacity) {
+        return allocate(reqCapacity, true);
+    }
+
+    private static ByteBuff allocate(int reqCapacity, boolean isDirect) {
+        ByteBuff buff = getByteBuff(isDirect);
         int normalCapacity = normalizeCapacity(reqCapacity);
-        ThreadLocalCache cache = obtainThreadLocalCache();
+        ThreadLocalCache cache = obtainThreadLocalCache(isDirect);
         if (cache.allocateFromCache(buff, reqCapacity, normalCapacity)) {
             return buff;
         }
@@ -68,17 +93,17 @@ public class ByteBuffPool {
     public static void free(ByteBuff buff) {
         int normalCapacity = normalizeCapacity(buff.capacity);
         if (buff.isInitThread(Thread.currentThread())) { // free to cache
-            ThreadLocalCache cache = obtainThreadLocalCache();
+            ThreadLocalCache cache = obtainThreadLocalCache(buff.isDirect());
             cache.freeToCache(buff);
         } else {                                        // free to chunk
-            if (buff.capacity <= MAX_BUDDY_CHUNK_SIZE) {
+            if (buff.poolChunk != null && buff.capacity <= MAX_BUDDY_CHUNK_SIZE) {
                 PoolChunk chunk = buff.poolChunk;
                 chunk.free(buff.handle, normalCapacity);
             } else { // free huge memory
                 ; //do nothing, wait for gc.
             }
         }
-        byteBuffRecycler.recycle(buff);
+        heapByteBuffRecycler.recycle(buff);
     }
 
     /**
@@ -86,8 +111,12 @@ public class ByteBuffPool {
      *
      * @return
      */
-    private static ByteBuff getByteBuff() {
-        return byteBuffRecycler.get();
+    private static ByteBuff getByteBuff(boolean isDirect) {
+        if (isDirect) {
+            return directByteBuffRecycler.get();
+        } else {
+            return heapByteBuffRecycler.get();
+        }
     }
 
     static int normalizeCapacity(int capacity) {

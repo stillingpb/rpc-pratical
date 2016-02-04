@@ -14,7 +14,7 @@ public class BuddyChunkListTest {
     BuddyChunkList q025;
     BuddyChunkList qInit;
     BuddyChunkList q075;
-    PoolArena area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16);
+    PoolArena area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16, true);
 
     @Before
     public void init() {
@@ -41,8 +41,8 @@ public class BuddyChunkListTest {
 
     @Test
     public void test1() {
-        ByteBuff buff = new ByteBuff();
-        BuddyChunk chunk = new BuddyChunk(pageSize, maxLevel);
+        ByteBuff buff = new PooledHeapByteBuff();
+        BuddyChunk chunk = new BuddyChunk.BuddyHeapChunk(pageSize, maxLevel);
         qInit.addChunk(chunk);
         assertEquals(1, getChunkNum(qInit));
 
@@ -108,10 +108,10 @@ public class BuddyChunkListTest {
 
     @Test
     public void test2() {
-        ByteBuff buff = new ByteBuff();
-        BuddyChunk chunk1 = new BuddyChunk(pageSize, maxLevel);
-        BuddyChunk chunk2 = new BuddyChunk(pageSize, maxLevel);
-        BuddyChunk chunk3 = new BuddyChunk(pageSize, maxLevel);
+        ByteBuff buff = new PooledHeapByteBuff();
+        BuddyChunk chunk1 = new BuddyChunk.BuddyHeapChunk(pageSize, maxLevel);
+        BuddyChunk chunk2 = new BuddyChunk.BuddyHeapChunk(pageSize, maxLevel);
+        BuddyChunk chunk3 = new BuddyChunk.BuddyHeapChunk(pageSize, maxLevel);
         qInit.addChunk(chunk1);
         qInit.addChunk(chunk2);
         qInit.addChunk(chunk3);
@@ -129,11 +129,11 @@ public class BuddyChunkListTest {
         assertEquals(0, getChunkNum(q050));
         assertEquals(3, getChunkNum(q075));
 
-        ByteBuff buff1 = new ByteBuff();
+        ByteBuff buff1 = new PooledHeapByteBuff();
         buff1.poolChunk = chunk1;
-        ByteBuff buff2 = new ByteBuff();
+        ByteBuff buff2 = new PooledHeapByteBuff();
         buff2.poolChunk = chunk2;
-        ByteBuff buff3 = new ByteBuff();
+        ByteBuff buff3 = new PooledHeapByteBuff();
         buff3.poolChunk = chunk3;
         ByteBuff[] buffs = {buff1, buff2, buff3};
 

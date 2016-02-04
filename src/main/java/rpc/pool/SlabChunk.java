@@ -3,11 +3,10 @@ package rpc.pool;
 /**
  * manage a page of memory with slab alogrithm.
  */
-public class SlabChunk implements PoolChunk {
+public class SlabChunk implements PoolChunk<Object> {
     private SubpagePool subpagePool;
     boolean inSubpagePool;
     private BuddyChunk buddyChunk;
-    private byte[] memory;
     private int baseOffset;
     private int pageSize;
 
@@ -19,7 +18,6 @@ public class SlabChunk implements PoolChunk {
     public SlabChunk(SubpagePool subpagePool, BuddyChunk buddy, int baseOffset, int pageSize, int elemCapacity) {
         this.subpagePool = subpagePool;
         this.buddyChunk = buddy;
-        this.memory = buddy.memory;
         this.baseOffset = baseOffset;
         this.elemCapacity = elemCapacity;
 
@@ -66,7 +64,7 @@ public class SlabChunk implements PoolChunk {
     }
 
     @Override
-    public byte[] getMemory() {
-        return memory;
+    public Object getMemory() {
+        return buddyChunk.getMemory();
     }
 }

@@ -29,7 +29,7 @@ public class ThreadLocalCache {
         if (entry == null) {
             return false;
         }
-        buff.init(entry.chunk, entry.handle, reqCapacity);
+        buff.init(entry.chunk, entry.chunk.getMemory(), entry.handle, reqCapacity);
         return true;
     }
 

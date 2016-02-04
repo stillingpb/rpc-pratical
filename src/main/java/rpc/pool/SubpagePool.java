@@ -27,7 +27,7 @@ public class SubpagePool {
         if (handle < 0) {
             return false;
         }
-        buff.init(slabChunk, handle, reqCapacity);
+        buff.init(slabChunk, slabChunk.getMemory(), handle, reqCapacity);
         return true;
     }
 

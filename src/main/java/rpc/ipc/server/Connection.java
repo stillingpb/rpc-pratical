@@ -68,7 +68,7 @@ class Connection {
     public int readCall(BlockingQueue<Call> callQueue) throws IOException {
         int count = 0;
         if (lenBuffer == null) {
-            lenBufferShell = ByteBuffPool.allocate(4);
+            lenBufferShell = ByteBuffPool.allocateHeap(4);
             lenBuffer = lenBufferShell.getByteBuffer();
             lenBuffer.mark();
         }
@@ -82,7 +82,7 @@ class Connection {
         if (readBuffer == null) {
             lenBuffer.reset();
             int dataLen = lenBuffer.getInt();
-            readBufferShell = ByteBuffPool.allocate(dataLen);
+            readBufferShell = ByteBuffPool.allocateHeap(dataLen);
             readBuffer = readBufferShell.getByteBuffer();
         }
         if (readBuffer.remaining() > 0) {

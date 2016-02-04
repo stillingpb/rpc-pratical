@@ -1,6 +1,6 @@
 package rpc.pool;
 
-public interface PoolChunk {
+public interface PoolChunk<T> {
 
     /**
      * 分配指定大小的一块空间.
@@ -15,5 +15,5 @@ public interface PoolChunk {
      */
     public void free(int handle, int normalCapacity);
 
-    public byte[] getMemory();
+    public T getMemory();
 }

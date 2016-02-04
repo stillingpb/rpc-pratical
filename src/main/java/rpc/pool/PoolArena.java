@@ -4,6 +4,7 @@ public class PoolArena {
     private int pageSize;
     private int maxLevel;
     private int chunkSize;
+    private boolean isDirect;
 
     private BuddyChunkList q050;
     private BuddyChunkList q025;
@@ -13,10 +14,11 @@ public class PoolArena {
     private SubpagePool subpagePool;
     private int maxSubpageSize;
 
-    public PoolArena(int pageSize, int maxLevel, int maxSubpageSize, int minSubpageSize) {
+    public PoolArena(int pageSize, int maxLevel, int maxSubpageSize, int minSubpageSize, boolean isDirect) {
         this.pageSize = pageSize;
         this.maxLevel = maxLevel;
         this.chunkSize = pageSize << maxLevel;
+        this.isDirect = isDirect;
 
         qInit = new BuddyChunkList(this, -1, 40);
         q025 = new BuddyChunkList(this, 25, 65);
@@ -52,7 +54,7 @@ public class PoolArena {
 
     private void allocateHuge(ByteBuff buff, int reqCapacity, int normCapacity) {
         byte[] data = new byte[reqCapacity];
-        buff.init(data, 0, reqCapacity);
+        buff.init(null, data, 0, reqCapacity);
     }
 
     private void allocateNormal(ByteBuff buff, int reqCapacity, int normCapacity) {
@@ -60,7 +62,12 @@ public class PoolArena {
                 || qInit.allocate(buff, reqCapacity, normCapacity) || q075.allocate(buff, reqCapacity, normCapacity)) {
             return;
         }
-        BuddyChunk buddyChunk = new BuddyChunk(pageSize, maxLevel);
+        BuddyChunk buddyChunk = null;
+        if (isDirect) {
+            buddyChunk = BuddyChunk.newDirectChunk(pageSize, maxLevel);
+        } else {
+            buddyChunk = BuddyChunk.newHeapChunk(pageSize, maxLevel);
+        }
         allocateFromChunk(buddyChunk, buff, reqCapacity, normCapacity);
         qInit.addChunk(buddyChunk);
     }
@@ -81,13 +88,13 @@ public class PoolArena {
             if (slabHandle < 0) {
                 return false;
             }
-            buff.init(slabChunk, slabHandle, reqCapacity);
+            buff.init(slabChunk, slabChunk.getMemory(), slabHandle, reqCapacity);
         } else {
             int buddyHandle = buddyChunk.allocate(normCapacity);
             if (buddyHandle < 0) {
                 return false;
             }
-            buff.init(buddyChunk, buddyHandle, reqCapacity);
+            buff.init(buddyChunk, buddyChunk.getMemory(), buddyHandle, reqCapacity);
         }
         return true;
     }

@@ -2,13 +2,15 @@ package rpc.pool;
 
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
+
 import static org.junit.Assert.assertEquals;
 
 public class BuddyChunkTest {
     @Test
     public void test() {
         int pageSize = 512;
-        BuddyChunk chunk = new BuddyChunk(pageSize, 4);
+        BuddyChunk chunk = new BuddyChunk.BuddyHeapChunk(pageSize, 4);
         int handle = chunk.allocate(pageSize * 2);
         assertEquals(0, handle);
         handle = chunk.allocate(pageSize);

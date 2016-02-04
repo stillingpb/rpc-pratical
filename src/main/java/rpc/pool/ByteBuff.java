@@ -2,27 +2,26 @@ package rpc.pool;
 
 import java.nio.*;
 
-public class ByteBuff {
+public abstract class ByteBuff<T> {
     int handle;
     int capacity;
     private ByteBuffer delegator;
     PoolChunk poolChunk;
     Thread initThread;
 
-    public void init(PoolChunk poolChunk, int handle, int capacity) {
+    protected void init(PoolChunk poolChunk, T memory, int handle, int capacity) {
         this.poolChunk = poolChunk;
-        init(poolChunk.getMemory(), handle, capacity);
-    }
-
-    public void init(byte[] memory, int handle, int capacity) {
         this.handle = handle;
         this.capacity = capacity;
-        this.delegator = ByteBuffer.wrap(memory, handle, capacity);
+        this.delegator = newByteBuffer(memory, handle, capacity);
         this.initThread = Thread.currentThread();
     }
 
+    protected abstract ByteBuffer newByteBuffer(T memory, int handle, int capacity);
+    protected abstract boolean isDirect();
+
     public void free() {
-        ByteBuffPool.free(this);
+        ByteBuffPool.free(this); // TODO
         this.poolChunk = null;
         this.handle = 0;
         this.capacity = 0;
