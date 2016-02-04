@@ -3,16 +3,29 @@ package rpc.pool;
 public class ByteBuffPool {
     private static final int PAGE_SIZE = 1024;
     private static final int MAX_LEVEL = 11;
+    private static final int MAX_BUDDY_CHUNK_SIZE = PAGE_SIZE << MAX_LEVEL;
     private static final int MAX_SUBPAGE_SIZE = 512;
     private static final int MIN_SUBPAGE_SIZE = 16;
     private static final int minSupageMask = ~(MIN_SUBPAGE_SIZE - 1);
-    static PoolArea poolArea;
+
+    private static int DEFAULT_ARENA_SIZE = 4;
+    private static int arenaSize;
+    private static PoolArena[] poolArenas;
+    private static int idx;
+    private static ThreadLocal<ThreadLocalCache> threadLocalCaches;
 
     private static final int BYTEBUFF_RECYCLE_SIZE = 200;
     static ObjectRecycler<ByteBuff> byteBuffRecycler;
 
     static {
-        poolArea = new PoolArea(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE);
+        int processor = Runtime.getRuntime().availableProcessors();
+        arenaSize = Math.min(processor, DEFAULT_ARENA_SIZE);
+        poolArenas = new PoolArena[arenaSize];
+        for (int i = 0; i < arenaSize; i++) {
+            poolArenas[i] = new PoolArena(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE);
+        }
+        threadLocalCaches = new ThreadLocal<ThreadLocalCache>();
+
         ObjectRecycler.ObjectFactory<ByteBuff> byteBuffFactory = new ObjectRecycler.ObjectFactory<ByteBuff>() {
             @Override
             public ByteBuff createNewObject() {
@@ -27,16 +40,44 @@ public class ByteBuffPool {
         byteBuffRecycler = new ObjectRecycler<ByteBuff>(BYTEBUFF_RECYCLE_SIZE, byteBuffFactory);
     }
 
+    static ThreadLocalCache obtainThreadLocalCache() {
+        ThreadLocalCache cache = threadLocalCaches.get();
+        if (cache == null) {
+            synchronized (ThreadLocalCache.class) {
+                idx = (idx + 1) % arenaSize;
+                PoolArena arena = poolArenas[idx];
+                cache = new ThreadLocalCache(arena, MAX_SUBPAGE_SIZE / MIN_SUBPAGE_SIZE, 256, 1 << MAX_LEVEL, 64);
+                threadLocalCaches.set(cache);
+            }
+        }
+        return cache;
+    }
+
     public static ByteBuff allocate(int reqCapacity) {
         ByteBuff buff = getByteBuff();
         int normalCapacity = normalizeCapacity(reqCapacity);
-        poolArea.allocate(buff, reqCapacity, normalCapacity);
+        ThreadLocalCache cache = obtainThreadLocalCache();
+        if (cache.allocateFromCache(buff, reqCapacity, normalCapacity)) {
+            return buff;
+        }
+        PoolArena poolArena = cache.poolArena;
+        poolArena.allocate(buff, reqCapacity, normalCapacity);
         return buff;
     }
 
     public static void free(ByteBuff buff) {
         int normalCapacity = normalizeCapacity(buff.capacity);
-        poolArea.free(buff, normalCapacity);
+        if (buff.isInitThread(Thread.currentThread())) { // free to cache
+            ThreadLocalCache cache = obtainThreadLocalCache();
+            cache.freeToCache(buff);
+        } else {                                        // free to chunk
+            if (buff.capacity <= MAX_BUDDY_CHUNK_SIZE) {
+                PoolChunk chunk = buff.poolChunk;
+                chunk.free(buff.handle, normalCapacity);
+            } else { // free huge memory
+                ; //do nothing, wait for gc.
+            }
+        }
         byteBuffRecycler.recycle(buff);
     }
 

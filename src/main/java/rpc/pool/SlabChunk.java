@@ -31,7 +31,7 @@ public class SlabChunk implements PoolChunk {
     }
 
     @Override
-    public int allocate(int capacity) {
+    public synchronized int allocate(int capacity) {
         assert capacity == elemCapacity;
         int offset = slabAllocator.obtainIdelPosition();
         if (offset < 0) {
@@ -45,7 +45,7 @@ public class SlabChunk implements PoolChunk {
     }
 
     @Override
-    public void free(int handle, int normalCapacity) {
+    public synchronized void free(int handle, int normalCapacity) {
         assert elemCapacity == normalCapacity;
         int offset = (handle - baseOffset) / elemCapacity;
         if (slabAllocator.free(offset)) {

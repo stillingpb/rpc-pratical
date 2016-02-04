@@ -7,6 +7,7 @@ public class ByteBuff {
     int capacity;
     private ByteBuffer delegator;
     PoolChunk poolChunk;
+    Thread initThread;
 
     public void init(PoolChunk poolChunk, int handle, int capacity) {
         this.poolChunk = poolChunk;
@@ -17,6 +18,7 @@ public class ByteBuff {
         this.handle = handle;
         this.capacity = capacity;
         this.delegator = ByteBuffer.wrap(memory, handle, capacity);
+        this.initThread = Thread.currentThread();
     }
 
     public void free() {
@@ -37,5 +39,9 @@ public class ByteBuff {
 
     public int getCapacity() {
         return capacity;
+    }
+
+    public boolean isInitThread(Thread curThread) {
+        return this.initThread == curThread;
     }
 }

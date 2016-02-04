@@ -14,21 +14,21 @@ public class BuddyChunkListTest {
     BuddyChunkList q025;
     BuddyChunkList qInit;
     BuddyChunkList q075;
-    PoolArea area = new PoolArea(pageSize, maxLevel, pageSize / 2, 16);
+    PoolArena area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16);
 
     @Before
     public void init() {
         try {
-            Field f = PoolArea.class.getDeclaredField("qInit");
+            Field f = PoolArena.class.getDeclaredField("qInit");
             f.setAccessible(true);
             qInit = (BuddyChunkList) f.get(area);
-            f = PoolArea.class.getDeclaredField("q025");
+            f = PoolArena.class.getDeclaredField("q025");
             f.setAccessible(true);
             q025 = (BuddyChunkList) f.get(area);
-            f = PoolArea.class.getDeclaredField("q050");
+            f = PoolArena.class.getDeclaredField("q050");
             f.setAccessible(true);
             q050 = (BuddyChunkList) f.get(area);
-            f = PoolArea.class.getDeclaredField("q075");
+            f = PoolArena.class.getDeclaredField("q075");
             f.setAccessible(true);
             q075 = (BuddyChunkList) f.get(area);
 

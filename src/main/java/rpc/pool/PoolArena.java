@@ -1,6 +1,6 @@
 package rpc.pool;
 
-public class PoolArea {
+public class PoolArena {
     private int pageSize;
     private int maxLevel;
     private int chunkSize;
@@ -11,9 +11,9 @@ public class PoolArea {
     private BuddyChunkList q075;
 
     private SubpagePool subpagePool;
-    private final int maxSubpageSize;
+    private int maxSubpageSize;
 
-    public PoolArea(int pageSize, int maxLevel, int maxSubpageSize, int minSubPageSize) {
+    public PoolArena(int pageSize, int maxLevel, int maxSubpageSize, int minSubpageSize) {
         this.pageSize = pageSize;
         this.maxLevel = maxLevel;
         this.chunkSize = pageSize << maxLevel;
@@ -27,7 +27,7 @@ public class PoolArea {
         link(q050, q075);
 
         this.maxSubpageSize = maxSubpageSize;
-        subpagePool = new SubpagePool(maxSubpageSize, minSubPageSize);
+        this.subpagePool = new SubpagePool(maxSubpageSize, minSubpageSize);
     }
 
     private void link(BuddyChunkList pre, BuddyChunkList next) {
@@ -47,15 +47,6 @@ public class PoolArea {
             allocateNormal(buff, reqCapacity, normalCapacity);
         } else {
             allocateHuge(buff, reqCapacity, normalCapacity);
-        }
-    }
-
-    public synchronized void free(ByteBuff buff, int normalCapacity) {
-        if (normalCapacity < chunkSize) {
-            PoolChunk chunk = buff.poolChunk;
-            chunk.free(buff.handle, normalCapacity);
-        } else {
-            ; //do nothing, wait for gc.
         }
     }
 
@@ -110,7 +101,28 @@ public class PoolArea {
         return subpagePool.allocate(buff, reqCapacity, normalCapacity);
     }
 
-    private boolean isTinyCapacity(int capacity) {
+    void free(ByteBuff buff, int normalCapacity) {
+        if (buff.capacity <= chunkSize) {
+            PoolChunk chunk = buff.poolChunk;
+            chunk.free(buff.handle, normalCapacity);
+        } else { // free huge memory
+            ; //do nothing, wait for gc.
+        }
+    }
+
+    boolean isTinyCapacity(int capacity) {
         return capacity <= maxSubpageSize;
+    }
+
+    boolean isHugeCapacity(int capacity) {
+        return capacity > chunkSize;
+    }
+
+    int getBuddyChunkIdx(int capacity) {
+        return (capacity - 1) / pageSize;
+    }
+
+    int getSlabChunkIdx(int capacity) {
+        return subpagePool.getSlabChunkIdx(capacity);
     }
 }

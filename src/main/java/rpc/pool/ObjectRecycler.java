@@ -6,14 +6,14 @@ public class ObjectRecycler<T> {
     private static final int DEFAULT_RECYCLE_SIZE = 200;
     private final int recycleSize;
 
-    private ThreadLocal<Stack<T>> threadRecycler;
+    private ThreadLocal<Stack<T>> threadRecyclers;
     private ObjectFactory<T> objectCreator;
 
     public ObjectRecycler(int recycleSize, ObjectFactory<T> objectCreator) {
         assert recycleSize > 0;
         this.recycleSize = Math.min(recycleSize, DEFAULT_RECYCLE_SIZE);
         this.objectCreator = objectCreator;
-        this.threadRecycler = new ThreadLocal<Stack<T>>();
+        this.threadRecyclers = new ThreadLocal<Stack<T>>();
     }
 
     public void recycle(T obj) {
@@ -35,10 +35,10 @@ public class ObjectRecycler<T> {
     }
 
     private Stack<T> getThreadRecycler() {
-        Stack<T> recycler = threadRecycler.get();
+        Stack<T> recycler = threadRecyclers.get();
         if (recycler == null) {
             Stack<T> stack = createNewRecycler();
-            threadRecycler.set(stack);
+            threadRecyclers.set(stack);
             recycler = stack;
         }
         return recycler;

@@ -1,7 +1,7 @@
 package rpc.pool;
 
 public class BuddyChunkList {
-    private PoolArea poolArea;
+    private PoolArena poolArean;
     BuddyChunkList nextList;
     BuddyChunkList preList;
     private final int minUseRate;
@@ -11,8 +11,8 @@ public class BuddyChunkList {
 
     private int chunkNum;
 
-    public BuddyChunkList(PoolArea poolArea, int minUseRate, int maxUseRate) {
-        this.poolArea = poolArea;
+    public BuddyChunkList(PoolArena poolArean, int minUseRate, int maxUseRate) {
+        this.poolArean = poolArean;
         this.minUseRate = minUseRate;
         this.maxUseRate = maxUseRate;
     }
@@ -22,7 +22,7 @@ public class BuddyChunkList {
             return false;
         }
         for (BuddyChunk cur = head; cur != null; ) {
-            boolean rst = poolArea.allocateFromChunk(cur, buff, reqCapacity, normCapacity);
+            boolean rst = poolArean.allocateFromChunk(cur, buff, reqCapacity, normCapacity);
             if (rst) {
                 checkUsageAndMove(cur);
                 return true;

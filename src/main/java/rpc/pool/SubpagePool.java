@@ -3,8 +3,8 @@ package rpc.pool;
 import static rpc.pool.PoolUtil.log2;
 
 public class SubpagePool {
-    private final int maxCapacity;
-    private final int minLevel;
+    private static int maxCapacity;
+    private static int minLevel;
     SlabChunk slabChunks[];
 
     public SubpagePool(int maxCapacity, int minCapacity) {
@@ -31,7 +31,7 @@ public class SubpagePool {
         return true;
     }
 
-    private int getSlabChunkIdx(int elemCapacity) {
+    int getSlabChunkIdx(int elemCapacity) {
         if (elemCapacity > maxCapacity) {
             return -1;
         }

@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 public class PoolAreaTest {
     int pageSize = 1024;
     int maxLevel = 4;
-    PoolArea area;
+    PoolArena area;
     SubpagePool subpagePool;
     BuddyChunkList q050;
     BuddyChunkList q025;
@@ -19,22 +19,22 @@ public class PoolAreaTest {
 
     @Before
     public void init() {
-        area = new PoolArea(pageSize, maxLevel, pageSize / 2, 16);
+        area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16);
         try {
-            Field f = PoolArea.class.getDeclaredField("subpagePool");
+            Field f = PoolArena.class.getDeclaredField("subpagePool");
             f.setAccessible(true);
             subpagePool = (SubpagePool) f.get(area);
 
-            f = PoolArea.class.getDeclaredField("qInit");
+            f = PoolArena.class.getDeclaredField("qInit");
             f.setAccessible(true);
             qInit = (BuddyChunkList) f.get(area);
-            f = PoolArea.class.getDeclaredField("q025");
+            f = PoolArena.class.getDeclaredField("q025");
             f.setAccessible(true);
             q025 = (BuddyChunkList) f.get(area);
-            f = PoolArea.class.getDeclaredField("q050");
+            f = PoolArena.class.getDeclaredField("q050");
             f.setAccessible(true);
             q050 = (BuddyChunkList) f.get(area);
-            f = PoolArea.class.getDeclaredField("q075");
+            f = PoolArena.class.getDeclaredField("q075");
             f.setAccessible(true);
             q075 = (BuddyChunkList) f.get(area);
         } catch (IllegalAccessException e) {
