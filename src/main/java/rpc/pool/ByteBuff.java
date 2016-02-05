@@ -18,10 +18,11 @@ public abstract class ByteBuff<T> {
     }
 
     protected abstract ByteBuffer newByteBuffer(T memory, int handle, int capacity);
+
     protected abstract boolean isDirect();
 
     public void free() {
-        ByteBuffPool.free(this); // TODO
+        ByteBuffPool.free(this);
         this.poolChunk = null;
         this.handle = 0;
         this.capacity = 0;

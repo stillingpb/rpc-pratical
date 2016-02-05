@@ -17,63 +17,63 @@ public class ThreadLocalCacheTest {
         int pageLevel = 11;
         int maxSubpageSize = 512;
         int minSubpageSize = 16;
-        arena = new PoolArena(pageSize, pageLevel, maxSubpageSize, minSubpageSize, false);
+        arena = new PoolArena(pageSize, pageLevel, maxSubpageSize, minSubpageSize, true);
         cache = new ThreadLocalCache(arena, maxSubpageSize / minSubpageSize, 2, 1 << pageLevel, 2);
     }
 
     @Test
     public void test() {
-        ByteBuff buff1 = new PooledHeapByteBuff();
+        ByteBuff buff1 = new PooledDirectByteBuff();
         arena.allocate(buff1, 123, 128);
         assertTrue(cache.freeToCache(buff1));
 
-        ByteBuff buff2 = new PooledHeapByteBuff();
+        ByteBuff buff2 = new PooledDirectByteBuff();
         arena.allocate(buff2, 124, 128);
         assertTrue(cache.freeToCache(buff2));
 
 
-        ByteBuff buff3 = new PooledHeapByteBuff();
+        ByteBuff buff3 = new PooledDirectByteBuff();
         arena.allocate(buff3, 125, 128);
         assertFalse(cache.freeToCache(buff3));
 
-        ByteBuff buff4 = new PooledHeapByteBuff();
+        ByteBuff buff4 = new PooledDirectByteBuff();
         assertTrue(cache.allocateFromCache(buff4, 114, 128));
         assertEquals(buff1.handle, buff4.handle);
 
 
-        ByteBuff buff5 = new PooledHeapByteBuff();
+        ByteBuff buff5 = new PooledDirectByteBuff();
         assertTrue(cache.allocateFromCache(buff5, 115, 128));
         assertEquals(buff2.handle, buff5.handle);
 
-        ByteBuff buff6 = new PooledHeapByteBuff();
+        ByteBuff buff6 = new PooledDirectByteBuff();
         assertFalse(cache.allocateFromCache(buff6, 116, 128));
     }
 
     @Test
     public void test2() {
-        ByteBuff buff1 = new PooledHeapByteBuff();
+        ByteBuff buff1 = new PooledDirectByteBuff();
         arena.allocate(buff1, 1230, 2048);
         assertTrue(cache.freeToCache(buff1));
 
-        ByteBuff buff2 = new PooledHeapByteBuff();
+        ByteBuff buff2 = new PooledDirectByteBuff();
         arena.allocate(buff2, 1240, 2048);
         assertTrue(cache.freeToCache(buff2));
 
 
-        ByteBuff buff3 = new PooledHeapByteBuff();
+        ByteBuff buff3 = new PooledDirectByteBuff();
         arena.allocate(buff3, 1250, 2048);
         assertFalse(cache.freeToCache(buff3));
 
-        ByteBuff buff4 = new PooledHeapByteBuff();
+        ByteBuff buff4 = new PooledDirectByteBuff();
         assertTrue(cache.allocateFromCache(buff4, 1140, 2048));
         assertEquals(buff1.handle, buff4.handle);
 
 
-        ByteBuff buff5 = new PooledHeapByteBuff();
+        ByteBuff buff5 = new PooledDirectByteBuff();
         assertTrue(cache.allocateFromCache(buff5, 1150, 2048));
         assertEquals(buff2.handle, buff5.handle);
 
-        ByteBuff buff6 = new PooledHeapByteBuff();
+        ByteBuff buff6 = new PooledDirectByteBuff();
         assertFalse(cache.allocateFromCache(buff6, 1160, 2048));
     }
 }

@@ -12,7 +12,7 @@ public class SlabChunkTest {
         int pageSize = 1024;
         int elemCapacity = 64;
         SubpagePool pool = new SubpagePool(pageSize / 2, elemCapacity);
-        BuddyChunk buddy = new BuddyChunk.BuddyHeapChunk(pageSize, 2);
+        BuddyChunk buddy = new BuddyChunk.BuddyDirectChunk(pageSize, 2);
         assertEquals(0, buddy.allocate(pageSize));
         int baseOffset = buddy.allocateOnePage();
         assertEquals(1 * pageSize, baseOffset);

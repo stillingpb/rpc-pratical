@@ -40,9 +40,9 @@ public class ObjectRecyclerTest {
 
     @Test
     public void testThreadLocal() throws InterruptedException {
-        ByteBuff buff = new PooledHeapByteBuff();
-        ByteBuff buff1 = new PooledHeapByteBuff();
-        ByteBuff buff2 = new PooledHeapByteBuff();
+        ByteBuff buff = new PooledDirectByteBuff();
+        ByteBuff buff1 = new PooledDirectByteBuff();
+        ByteBuff buff2 = new PooledDirectByteBuff();
         ObjectRecycler.ObjectFactory<ByteBuff> byteBuffCreator = getCreator();
         ObjectRecycler<ByteBuff> recycler = new ObjectRecycler<ByteBuff>(2, byteBuffCreator);
 
@@ -88,7 +88,7 @@ public class ObjectRecyclerTest {
         ObjectRecycler.ObjectFactory<ByteBuff> byteBuffCreator = new ObjectRecycler.ObjectFactory<ByteBuff>() {
             @Override
             public ByteBuff createNewObject() {
-                return new PooledHeapByteBuff();
+                return new PooledDirectByteBuff();
             }
         };
         return byteBuffCreator;

@@ -7,10 +7,21 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertEquals;
 
 public class BuddyChunkTest {
+    int pageSize = 512;
+
     @Test
-    public void test() {
-        int pageSize = 512;
+    public void testHeapChunk() {
         BuddyChunk chunk = new BuddyChunk.BuddyHeapChunk(pageSize, 4);
+        testChunk(chunk);
+    }
+
+    @Test
+    public void testDirectChunk() {
+        BuddyChunk chunk = new BuddyChunk.BuddyDirectChunk(pageSize, 4);
+        testChunk(chunk);
+    }
+
+    private void testChunk(BuddyChunk chunk) {
         int handle = chunk.allocate(pageSize * 2);
         assertEquals(0, handle);
         handle = chunk.allocate(pageSize);

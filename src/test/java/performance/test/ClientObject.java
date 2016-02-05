@@ -56,7 +56,7 @@ public class ClientObject {
     }
 
     private static Text generateText() {
-        int len = 500 + new Random().nextInt(200);
+        int len = 100 + new Random().nextInt(200);
         String str = "";
         for (int i = 0; i < len; i++) {
             str += ((char) ('a' + (i % 26)));

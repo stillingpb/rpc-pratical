@@ -10,7 +10,7 @@ public class SlabChunk implements PoolChunk<Object> {
     private int baseOffset;
     private int pageSize;
 
-    int elemCapacity;  // eleCapacity可能不是2的n次方.
+    int elemCapacity;  // eleCapacity允许不是2的n次方.
     private int eleAmount; // the amount of element.
     private int usedElemNum;
     private SlabSubpageAllocator slabAllocator;

@@ -24,6 +24,7 @@ public class ByteBuffPool {
     static {
         int processor = Runtime.getRuntime().availableProcessors();
         arenaSize = Math.min(processor, DEFAULT_ARENA_SIZE);
+
         heapPoolArenas = new PoolArena[arenaSize];
         for (int i = 0; i < arenaSize; i++) {
             heapPoolArenas[i] = new PoolArena(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE, false);
@@ -35,6 +36,7 @@ public class ByteBuffPool {
                         return new PooledHeapByteBuff();
                     }
                 });
+
         directPoolArenas = new PoolArena[arenaSize];
         for (int i = 0; i < arenaSize; i++) {
             directPoolArenas[i] = new PoolArena(PAGE_SIZE, MAX_LEVEL, MAX_SUBPAGE_SIZE, MIN_SUBPAGE_SIZE, true);
