@@ -27,8 +27,8 @@ class Connection {
     // 接收调用请求相关参数
     private SelectionKey readSelectionKey;
     private ByteBuff lenBufferShell;
-    private ByteBuff readBufferShell;
     private ByteBuffer lenBuffer;
+    private ByteBuff readBufferShell;  // read Buffer should be a direct buffer. because i need to read data into memory.
     private ByteBuffer readBuffer;
 
     /*********************************/

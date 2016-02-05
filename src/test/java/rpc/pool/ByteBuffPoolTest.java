@@ -2,9 +2,9 @@ package rpc.pool;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
+import java.nio.ByteBuffer;
+
+import static org.junit.Assert.*;
 
 public class ByteBuffPoolTest {
     @Test
@@ -95,5 +95,17 @@ public class ByteBuffPoolTest {
         }
         assertEquals(caches[0], caches[1]);
         assertNotEquals(caches[0], caches[2]);
+    }
+
+    @Test
+    public void test4(){
+        ByteBuff b = ByteBuffPool.allocateDirect(4);
+        ByteBuffer buffer = b.getByteBuffer();
+        assertTrue(buffer.isDirect());
+        int num = 23;
+        buffer.mark();
+        buffer.putInt(num);
+        buffer.reset();
+        assertEquals(num, buffer.getInt());
     }
 }
