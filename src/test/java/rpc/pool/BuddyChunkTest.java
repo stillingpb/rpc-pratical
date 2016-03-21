@@ -30,16 +30,16 @@ public class BuddyChunkTest {
         assertEquals(pageSize * 4, handle);
         handle = chunk.allocate(pageSize);
         assertEquals(pageSize * 3, handle);
-        assertEquals(100 * 8 / 16, chunk.usage());
+        assertEquals(100 * 8 / 16, (int) chunk.usage());
 
         chunk.free(pageSize * 3, pageSize);
         chunk.free(pageSize * 2, pageSize);
-        assertEquals(100 * 6 / 16, chunk.usage());
+        assertEquals(100 * 6 / 16, (int) chunk.usage());
 
         handle = chunk.allocate(pageSize * 2);
         assertEquals(pageSize * 2, handle);
-        assertEquals(100 * 8 / 16, chunk.usage());
+        assertEquals(100 * 8 / 16, (int) chunk.usage());
         chunk.allocate(pageSize * 8);
-        assertEquals(100 * 16 / 16, chunk.usage());
+        assertEquals(100 * 16 / 16, (int) chunk.usage());
     }
 }

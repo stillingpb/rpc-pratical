@@ -8,6 +8,7 @@ public class PoolArena {
 
     private BuddyChunkList q050;
     private BuddyChunkList q025;
+    private BuddyChunkList q000;
     private BuddyChunkList qInit;
     private BuddyChunkList q075;
 
@@ -20,11 +21,13 @@ public class PoolArena {
         this.chunkSize = pageSize << maxLevel;
         this.isDirect = isDirect;
 
-        qInit = new BuddyChunkList(this, -1, 40);
-        q025 = new BuddyChunkList(this, 25, 65);
-        q050 = new BuddyChunkList(this, 50, 95);
+        qInit = new BuddyChunkList(this, -1, 25);
+        q000 = new BuddyChunkList(this, 0, 50);
+        q025 = new BuddyChunkList(this, 25, 75);
+        q050 = new BuddyChunkList(this, 50, 100);
         q075 = new BuddyChunkList(this, 75, 101);
-        link(qInit, q025);
+        link(qInit, q000);
+        link(q000, q025);
         link(q025, q050);
         link(q050, q075);
 
@@ -59,7 +62,8 @@ public class PoolArena {
 
     private void allocateNormal(ByteBuff buff, int reqCapacity, int normCapacity) {
         if (q050.allocate(buff, reqCapacity, normCapacity) || q025.allocate(buff, reqCapacity, normCapacity)
-                || qInit.allocate(buff, reqCapacity, normCapacity) || q075.allocate(buff, reqCapacity, normCapacity)) {
+                || q000.allocate(buff, reqCapacity, normCapacity) || qInit.allocate(buff, reqCapacity, normCapacity)
+                || q075.allocate(buff, reqCapacity, normCapacity)) {
             return;
         }
         BuddyChunk buddyChunk = null;

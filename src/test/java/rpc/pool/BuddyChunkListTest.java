@@ -13,6 +13,7 @@ public class BuddyChunkListTest {
     BuddyChunkList q050;
     BuddyChunkList q025;
     BuddyChunkList qInit;
+    BuddyChunkList q000;
     BuddyChunkList q075;
     PoolArena area = new PoolArena(pageSize, maxLevel, pageSize / 2, 16, true);
 
@@ -22,6 +23,9 @@ public class BuddyChunkListTest {
             Field f = PoolArena.class.getDeclaredField("qInit");
             f.setAccessible(true);
             qInit = (BuddyChunkList) f.get(area);
+            f = PoolArena.class.getDeclaredField("q000");
+            f.setAccessible(true);
+            q000 = (BuddyChunkList) f.get(area);
             f = PoolArena.class.getDeclaredField("q025");
             f.setAccessible(true);
             q025 = (BuddyChunkList) f.get(area);
@@ -47,12 +51,15 @@ public class BuddyChunkListTest {
         assertEquals(1, getChunkNum(qInit));
 
         qInit.allocate(buff, pageSize, pageSize); // chunk usage: 12.5%
-        qInit.allocate(buff, pageSize, pageSize); // chunk usage: 25%
-        qInit.allocate(buff, pageSize, pageSize); // chunk usage: 37.5%
         assertEquals(1, getChunkNum(qInit));
 
-        qInit.allocate(buff, pageSize, pageSize); // chunk usage: 50%
+        qInit.allocate(buff, pageSize, pageSize); // chunk usage: 25%
         assertEquals(0, getChunkNum(qInit));
+        assertEquals(1, getChunkNum(q000));
+
+        q000.allocate(buff, pageSize, pageSize); // chunk usage: 37.5%
+        q000.allocate(buff, pageSize, pageSize); // chunk usage: 50%
+        assertEquals(0, getChunkNum(q000));
         assertEquals(1, getChunkNum(q025));
 
         q025.allocate(buff, pageSize, pageSize); // chunk usage: 62.5%
@@ -61,7 +68,6 @@ public class BuddyChunkListTest {
         q025.allocate(buff, pageSize, pageSize); // chunk usage: 75%
         assertEquals(0, getChunkNum(q025));
         assertEquals(1, getChunkNum(q050));
-
 
         q050.allocate(buff, pageSize, pageSize); // chunk usage: 87.5%
         assertEquals(1, getChunkNum(q050));
@@ -99,17 +105,17 @@ public class BuddyChunkListTest {
         buff.handle = 1 * pageSize;
         area.free(buff, pageSize); // chunk useage: 12.5%
         assertEquals(0, getChunkNum(q025));
-        assertEquals(1, getChunkNum(qInit));
+        assertEquals(1, getChunkNum(q000));
 
         buff.handle = 0 * pageSize;
         area.free(buff, pageSize); // chunk useage: 0%
-        assertEquals(1, getChunkNum(qInit));
+        assertEquals(0, getChunkNum(q000));
     }
 
     @Test
     public void test2() {
         ByteBuff buff = new PooledDirectByteBuff();
-        BuddyChunk chunk1 = new BuddyChunk.BuddyDirectChunk(pageSize, maxLevel);
+        BuddyChunk chunk1 = new BuddyChunk.BuddyDirectChunk(pageSize, maxLevel); // chunksize == pageSize << maxLevel
         BuddyChunk chunk2 = new BuddyChunk.BuddyDirectChunk(pageSize, maxLevel);
         BuddyChunk chunk3 = new BuddyChunk.BuddyDirectChunk(pageSize, maxLevel);
         qInit.addChunk(chunk1);
@@ -117,8 +123,12 @@ public class BuddyChunkListTest {
         qInit.addChunk(chunk3);
         assertEquals(3, getChunkNum(qInit));
 
-        allocateFromChunkList(buff, qInit, pageSize, 3 * 4);
+        allocateFromChunkList(buff, qInit, pageSize, 3 * 2);
         assertEquals(0, getChunkNum(qInit));
+        assertEquals(3, getChunkNum(q000));
+
+        allocateFromChunkList(buff, q000, pageSize, 3 * 2);
+        assertEquals(0, getChunkNum(q000));
         assertEquals(3, getChunkNum(q025));
 
         allocateFromChunkList(buff, q025, pageSize, 3 * 2);
@@ -147,10 +157,10 @@ public class BuddyChunkListTest {
 
         freeFromChunkList(buffs, pageSize, 3, 7);
         assertEquals(0, getChunkNum(q025));
-        assertEquals(3, getChunkNum(qInit));
+        assertEquals(3, getChunkNum(q000));
 
         freeFromChunkList(buffs, pageSize, 5);
-        assertEquals(3, getChunkNum(qInit));
+        assertEquals(0, getChunkNum(q000));
     }
 
     private int getChunkNum(BuddyChunkList list) {

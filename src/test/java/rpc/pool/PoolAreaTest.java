@@ -14,6 +14,7 @@ public class PoolAreaTest {
     SubpagePool subpagePool;
     BuddyChunkList q050;
     BuddyChunkList q025;
+    BuddyChunkList q000;
     BuddyChunkList qInit;
     BuddyChunkList q075;
 
@@ -28,6 +29,9 @@ public class PoolAreaTest {
             f = PoolArena.class.getDeclaredField("qInit");
             f.setAccessible(true);
             qInit = (BuddyChunkList) f.get(area);
+            f = PoolArena.class.getDeclaredField("q000");
+            f.setAccessible(true);
+            q000 = (BuddyChunkList) f.get(area);
             f = PoolArena.class.getDeclaredField("q025");
             f.setAccessible(true);
             q025 = (BuddyChunkList) f.get(area);
@@ -59,7 +63,7 @@ public class PoolAreaTest {
         area.allocate(buff2, 8 * pageSize - 1, 8 * pageSize);
         assertNotNull(buff2.getByteBuffer());
         assertEquals(chunk, buff2.poolChunk);
-        assertEquals(1, getChunkNum(q025));
+        assertEquals(1, getChunkNum(q000));
         assertEquals(8 * pageSize - 1, buff2.capacity);
         assertEquals(8 * pageSize, buff2.handle);
 
@@ -68,7 +72,7 @@ public class PoolAreaTest {
         ByteBuff buff3 = new PooledDirectByteBuff();
         area.allocate(buff3, elemCapacity, elemCapacity);
         assertEquals(elemCapacity, buff3.capacity);
-        assertEquals(1, getChunkNum(q050));
+        assertEquals(1, getChunkNum(q025));
         assertNotNull(buff3.getByteBuffer());
         assertTrue(buff3.poolChunk instanceof SlabChunk);
         assertNotNull(subpagePool.slabChunks[elemCapacity / 16 - 1]);
@@ -93,7 +97,7 @@ public class PoolAreaTest {
         area.free(buff4, elemCapacity);
         area.free(buff5, elemCapacity);
         area.free(buff6, elemCapacity);
-        assertEquals(1, getChunkNum(qInit));
+        assertEquals(1, getChunkNum(q000));
     }
 
     private int getChunkNum(BuddyChunkList list) {

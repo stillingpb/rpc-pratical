@@ -76,8 +76,8 @@ public abstract class BuddyChunk<T> implements PoolChunk {
         return handle;
     }
 
-    public int usage() {
-        return 100 * usedPages / totalPageNum;
+    public double usage() {
+        return 100.0 * usedPages / totalPageNum;
     }
 
     static BuddyChunk newHeapChunk(int pageSize, int maxLevel) {

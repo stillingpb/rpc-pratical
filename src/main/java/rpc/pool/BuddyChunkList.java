@@ -39,7 +39,7 @@ public class BuddyChunkList {
      * @param chunk buddyChunk
      */
     void checkUsageAndMove(BuddyChunk chunk) {
-        int usage = chunk.usage();
+        double usage = chunk.usage();
         if (usage >= maxUseRate) {
             this.removeChunk(chunk);
             nextList.addChunk(chunk);
@@ -48,6 +48,11 @@ public class BuddyChunkList {
         if (usage < minUseRate) {
             this.removeChunk(chunk);
             preList.addChunk(chunk);
+        }
+        if (usage <= 0.0 && minUseRate == 0) { // Q0 List, and chunk is empty
+            // free chunk
+            this.removeChunk(chunk);
+            chunk = null;
         }
     }
 
